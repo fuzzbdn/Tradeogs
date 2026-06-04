@@ -40,12 +40,16 @@
                 <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
                     <h2>Min Discogs-samling</h2>
                     
-                    <div id="collection-status">
-                        <p>Klicka på knappen nedan för att ladda in dina skivor från Discogs.</p>
+                    <div id="collection-status" style="margin-bottom: 20px;">
+                        <p>Klicka på knappen för att hämta dina skivor.</p>
                         <button class="btn btn-primary" onclick="fetchCollection()" style="width: auto; padding: 10px 20px;">Ladda samling</button>
                     </div>
+
+                    <div id="search-container" style="display: none; margin-bottom: 20px;">
+                        <input type="text" id="search-input" placeholder="Sök på artist eller titel..." onkeyup="filterCollection()" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc;">
+                    </div>
                     
-                    <div id="collection-list" style="margin-top: 30px; display: grid; gap: 15px;"></div>
+                    <div id="collection-list" style="display: grid; gap: 15px;"></div>
                 </div>
             </section>
 
