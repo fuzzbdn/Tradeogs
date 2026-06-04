@@ -31,6 +31,7 @@ const oauth = OAuth({
 // 1. SUPABASE AUTH (Skapa konto & Logga in)
 // ==========================================
 
+// Skapa konto med e-post och lösenord
 router.post('/register', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -45,6 +46,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
+// Logga in med e-post och lösenord
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -59,12 +61,16 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// Starta Google OAuth
 router.get('/google', async (req, res) => {
     const HOST_URL = process.env.HOST_URL || 'http://localhost:3000';
     try {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: `${HOST_URL}/index.html` },
+            options: { 
+                // Ändrad till dashboard.html för det nya flödet
+                redirectTo: `${HOST_URL}/dashboard.html` 
+            },
         });
         if (error) throw error;
         res.redirect(data.url);
@@ -78,6 +84,7 @@ router.get('/google', async (req, res) => {
 // 2. DISCOGS AUTH (OAuth 1.0a)
 // ==========================================
 
+// Rutt för att initiera Discogs-inloggning
 router.get('/discogs/login', async (req, res) => {
     const requestTokenUrl = 'https://api.discogs.com/oauth/request_token';
     const HOST_URL = process.env.HOST_URL || 'http://localhost:3000';
@@ -110,6 +117,7 @@ router.get('/discogs/login', async (req, res) => {
     }
 });
 
+// Callback-rutt från Discogs efter godkänd auktorisering
 router.get('/discogs/callback', async (req, res) => {
     const { oauth_token, oauth_verifier } = req.query;
     const oauth_token_secret = getCookie(req, 'discogs_temp_secret');
