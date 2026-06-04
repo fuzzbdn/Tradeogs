@@ -1,466 +1,122 @@
-/* =========================================
-   1. SÄKERHET & KONTROLLER
-   ========================================= */
-(function checkAuthentication() {
-    const isDashboard = window.location.pathname.includes('dashboard.html');
-    let session = localStorage.getItem('supabase_session');
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tradeogs - Dashboard</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="/app.js" defer></script>
+</head>
+<body>
 
-    if (isDashboard && window.location.hash) {
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
-        
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
+    <header>
+        <div class="header-left">
+            <img src="/tradeogs_logo.png" alt="Tradeogs Logo" class="dash-logo">
+        </div>
+        <button class="logout-btn" onclick="logout()">Logga ut</button>
+    </header>
 
-        if (accessToken) {
-            const oauthSession = { access_token: accessToken, refresh_token: refreshToken };
-            localStorage.setItem('supabase_session', JSON.stringify(oauthSession));
-            session = JSON.stringify(oauthSession);
-            history.replaceState(null, null, window.location.pathname);
-        }
+    <div class="app-layout">
+        <aside class="sidebar">
+            <a class="menu-item active" id="nav-collection" onclick="switchView('collection')">Min Samling</a>
+            <a class="menu-item" id="nav-ads" onclick="switchView('ads')">Aktiva Annonser</a>
+            <a class="menu-item" id="nav-settings" onclick="switchView('settings')">Inställningar & Kopplingar</a>
+        </aside>
 
-        const discogsToken = params.get('discogs_token');
-        const discogsSecret = params.get('discogs_secret');
-        
-        if (discogsToken && discogsSecret) {
-            localStorage.setItem('discogs_token', discogsToken);
-            localStorage.setItem('discogs_secret', discogsSecret);
-            history.replaceState(null, null, window.location.pathname);
-        }
-    }
-
-    if (isDashboard && !session) window.location.href = '/index.html';
-})();
-
-/* =========================================
-   2. INITIALISERA GRÄNSSNITTET
-   ========================================= */
-let currentPage = 1;
-let isLoading = false;
-window.myCollection = []; 
-
-document.addEventListener("DOMContentLoaded", function() {
-    const discogsToken = localStorage.getItem('discogs_token');
-    const discogsBtn = document.querySelector('.btn-discogs');
-    
-    if (discogsToken && discogsBtn) {
-        discogsBtn.innerText = "✅ Discogs är kopplat";
-        discogsBtn.style.backgroundColor = "#51cf66";
-        discogsBtn.style.borderColor = "#51cf66";
-        discogsBtn.style.pointerEvents = "none";
-    }
-
-    const savedSettings = localStorage.getItem('tradeogs_display');
-    if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        const setChecked = (id, val) => { if(document.getElementById(id)) document.getElementById(id).checked = val; };
-        
-        setChecked('set-bild', settings.bild);
-        setChecked('set-format', settings.format);
-        setChecked('set-ar', settings.ar);
-        setChecked('set-bolag', settings.bolag);
-        setChecked('set-genre', settings.genre);
-        setChecked('set-tracklist', settings.tracklist);
-        setChecked('set-katalog', settings.katalog);
-        setChecked('set-url', settings.url);
-        setChecked('set-price', settings.price);
-    }
-
-    // Starta på samlingen direkt om vi är på dashboard
-    if (window.location.pathname.includes('dashboard.html')) {
-        switchView('collection');
-    }
-});
-
-/* =========================================
-   3. INLOGGNING OCH REGISTRERING
-   ========================================= */
-async function loginUser() {
-    const email = document.getElementById('email')?.value;
-    const password = document.getElementById('password')?.value;
-    const statusDiv = document.getElementById('status-message');
-
-    if (!email || !password) {
-        statusDiv.style.color = '#ff4757'; statusDiv.innerText = 'Vänligen fyll i både e-post och lösenord.'; return;
-    }
-
-    statusDiv.style.color = '#666'; statusDiv.innerText = 'Loggar in...';
-
-    try {
-        const response = await fetch('/api/auth/login', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Något gick fel.');
-        localStorage.setItem('supabase_session', JSON.stringify(result.session));
-        window.location.href = '/dashboard.html';
-    } catch (error) {
-        statusDiv.style.color = '#ff4757'; statusDiv.innerText = error.message;
-    }
-}
-
-async function registerUser() {
-    const email = document.getElementById('email')?.value;
-    const password = document.getElementById('password')?.value;
-    const confirmPassword = document.getElementById('confirm-password')?.value;
-    const statusDiv = document.getElementById('status-message');
-
-    if (!email || !password || !confirmPassword) { statusDiv.style.color = '#ff4757'; statusDiv.innerText = 'Fyll i alla fält.'; return; }
-    if (password !== confirmPassword) { statusDiv.style.color = '#ff4757'; statusDiv.innerText = 'Lösenorden matchar inte.'; return; }
-    if (password.length < 6) { statusDiv.style.color = '#ff4757'; statusDiv.innerText = 'Lösenordet måste vara minst 6 tecken.'; return; }
-
-    statusDiv.style.color = '#666'; statusDiv.innerText = 'Skapar konto...';
-
-    try {
-        const response = await fetch('/api/auth/register', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Något gick fel.');
-        if (result.session) localStorage.setItem('supabase_session', JSON.stringify(result.session));
-        statusDiv.style.color = '#51cf66'; statusDiv.innerText = 'Konto skapat! Skickar dig vidare...';
-        setTimeout(() => { window.location.href = '/dashboard.html'; }, 1500);
-    } catch (error) {
-        statusDiv.style.color = '#ff4757'; statusDiv.innerText = error.message;
-    }
-}
-
-/* =========================================
-   4. DASHBOARD-FUNKTIONER & INSTÄLLNINGAR
-   ========================================= */
-function switchView(viewName) {
-    document.querySelectorAll('.view-section').forEach(section => section.classList.remove('active'));
-    document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-    document.getElementById('view-' + viewName)?.classList.add('active');
-    document.getElementById('nav-' + viewName)?.classList.add('active');
-
-    if (viewName === 'collection' && window.myCollection.length === 0) {
-        fetchCollection(1);
-    }
-}
-
-function logout() {
-    localStorage.removeItem('supabase_session');
-    localStorage.removeItem('discogs_token');
-    localStorage.removeItem('discogs_secret');
-    window.location.href = '/index.html';
-}
-
-function saveDisplaySettings() {
-    const settings = {
-        bild: document.getElementById('set-bild').checked,
-        format: document.getElementById('set-format').checked,
-        ar: document.getElementById('set-ar').checked,
-        bolag: document.getElementById('set-bolag').checked,
-        genre: document.getElementById('set-genre').checked,
-        tracklist: document.getElementById('set-tracklist').checked,
-        katalog: document.getElementById('set-katalog').checked,
-        url: document.getElementById('set-url').checked,
-        price: document.getElementById('set-price').checked
-    };
-    localStorage.setItem('tradeogs_display', JSON.stringify(settings));
-    
-    const btn = document.querySelector('button[onclick="saveDisplaySettings()"]');
-    const oldText = btn.innerText;
-    btn.innerText = "✅ Sparat!"; btn.style.backgroundColor = "#51cf66"; btn.style.color = "white";
-    setTimeout(() => { btn.innerText = oldText; btn.style.backgroundColor = "transparent"; btn.style.color = "#555"; }, 2000);
-
-    if (window.myCollection && window.myCollection.length > 0) renderCollection(window.myCollection, false);
-}
-
-/* =========================================
-   5. DISCOGS - HÄMTA & RITA UT SAMLING
-   ========================================= */
-async function fetchCollection(page = 1) {
-    if (isLoading) return;
-    isLoading = true;
-
-    const token = localStorage.getItem('discogs_token');
-    const secret = localStorage.getItem('discogs_secret');
-    const statusDiv = document.getElementById('collection-status');
-    const loadMoreBtn = document.getElementById('load-more-btn');
-
-    if (!token || !secret) {
-        statusDiv.innerHTML = `
-            <div style="text-align: center; padding: 40px 20px; background: #fff; border-radius: 8px; border: 1px dashed #ccc;">
-                <p style="color: #666; font-size: 16px; margin-bottom: 20px;">Du har inte kopplat ditt Discogs-konto ännu.</p>
-                <button class="btn btn-discogs" onclick="switchView('settings')">Gå till inställningar för att koppla</button>
-            </div>`;
-        if (loadMoreBtn) loadMoreBtn.style.display = 'none';
-        isLoading = false;
-        return;
-    }
-
-    if (page === 1) {
-        statusDiv.innerHTML = '<p style="color: #666;">Hämtar samling från Discogs... ⏳</p>';
-        document.getElementById('collection-list').innerHTML = '';
-        window.myCollection = [];
-    } else {
-        if (loadMoreBtn) loadMoreBtn.innerText = 'Laddar... ⏳';
-    }
-
-    try {
-        const response = await fetch(`/api/discogs/collection?token=${token}&secret=${secret}&limit=25&page=${page}`);
-        const data = await response.json();
-        
-        if (response.status === 401) {
-            statusDiv.innerHTML = `
-                <div style="text-align: center; padding: 40px 20px; background: #fff; border-radius: 8px; border: 1px dashed #ccc;">
-                    <p style="color: #666; font-size: 16px; margin-bottom: 20px;">Din koppling till Discogs är ogiltig eller har löpt ut.</p>
-                    <button class="btn btn-discogs" onclick="switchView('settings')">Gå till inställningar för att koppla igen</button>
-                </div>`;
-            isLoading = false;
-            return;
-        }
-
-        if (!response.ok) throw new Error(data.error || 'Något gick fel vid hämtningen.');
-
-        window.myCollection = window.myCollection.concat(data.skivor); 
-        currentPage = page;
-
-        statusDiv.innerHTML = `
-            <p style="color: #51cf66; font-weight: bold; margin-bottom: 15px;">
-                ✅ Hittade användare: ${data.username} <br>
-                Visar ${window.myCollection.length} av totalt ${data.totalt_i_samlingen} skivor.
-            </p>`;
-        
-        document.getElementById('search-container').style.display = 'block';
-        
-        // Rita ut de nya skivorna i listan
-        renderCollection(data.skivor, page > 1);
-
-        // Hantera knappen för sidnumrering
-        if (data.pagination && data.pagination.pages > page) {
-            loadMoreBtn.style.display = 'block';
-            loadMoreBtn.innerText = 'Ladda nästa 25 skivor';
-        } else {
-            loadMoreBtn.style.display = 'none';
-        }
-
-    } catch (error) {
-        statusDiv.innerHTML = `<p style="color: #ff4757; font-weight: bold;">Fel: ${error.message}</p>`;
-        if (loadMoreBtn && page > 1) loadMoreBtn.innerText = 'Ladda nästa 25 skivor';
-    }
-    
-    isLoading = false;
-}
-
-function filterCollection() {
-    const query = document.getElementById('search-input').value.toLowerCase();
-    const filteredList = window.myCollection.filter(skiva => {
-        return skiva.artist.toLowerCase().includes(query) || skiva.titel.toLowerCase().includes(query);
-    });
-    
-    const loadMoreBtn = document.getElementById('load-more-btn');
-    if (loadMoreBtn) {
-        // Göm ladda fler-knappen medans man söker för att inte strula till det
-        loadMoreBtn.style.display = query.length > 0 ? 'none' : 'block';
-    }
-    
-    renderCollection(filteredList, false);
-}
-
-function renderCollection(skivor, append = false) {
-    const listDiv = document.getElementById('collection-list');
-    
-    // Töm listan om vi inte gör en "append" (lägger till i slutet)
-    if (!append) {
-        listDiv.innerHTML = ''; 
-    }
-
-    const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || { 
-        bild: true, format: true, ar: true, bolag: false, genre: true, 
-        tracklist: true, katalog: true, url: true, price: true 
-    };
-
-    if (skivor.length === 0 && !append) {
-        listDiv.innerHTML = '<p style="color: #888;">Inga skivor hittades.</p>';
-        return;
-    }
-
-    skivor.forEach(skiva => {
-        const item = document.createElement('div');
-        item.style.cssText = "border: 1px solid #e1e4e8; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.02); overflow: hidden; transition: all 0.2s;";
-        
-        let bildHtml = '';
-        if (settings.bild) {
-            bildHtml = skiva.bild 
-                ? `<img src="${skiva.bild}" alt="Omslag" style="width: 60px; height: 60px; border-radius: 4px; margin-right: 15px; object-fit: cover; border: 1px solid #ccc;">` 
-                : `<div style="width: 60px; height: 60px; background: #e1e4e8; border-radius: 4px; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px;">💿</div>`;
-        }
-
-        let infoArray = [];
-        if (settings.format) infoArray.push(skiva.format);
-        if (settings.ar) infoArray.push(skiva.ar || 'Okänt år');
-        if (settings.bolag) infoArray.push(`🏷️ ${skiva.bolag}`);
-        
-        const extraInfo = infoArray.length > 0 
-            ? `<span style="font-size: 13px; color: #666; display: block; margin-top: 4px;">${infoArray.join(' • ')}</span>`
-            : '';
-
-        const mainRow = document.createElement('div');
-        mainRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; cursor: pointer; flex-wrap: wrap; gap: 10px;";
-        
-        mainRow.innerHTML = `
-            <div style="display: flex; align-items: center; flex-grow: 1; min-width: 0; padding-right: 15px;">
-                ${bildHtml}
-                <div style="min-width: 0;">
-                    <strong style="display: block; font-size: 16px; color: #222; word-break: break-word;">${skiva.artist} - ${skiva.titel}</strong>
-                    ${extraInfo}
-                </div>
-            </div>
+        <main class="main-content">
             
-            <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
-                <span style="color: #555; font-size: 13px; width: 65px; text-align: right; display: inline-block; font-weight: 600;">▼ Info</span>
-                <button class="btn btn-tradera" onclick="event.stopPropagation(); alert('Skapar annons för ID: ${skiva.id}')" style="margin: 0; padding: 8px 15px; font-size: 14px; width: auto;">Sälj på Tradera</button>
-            </div>
-        `;
-
-        const detailsRow = document.createElement('div');
-        detailsRow.style.cssText = "display: none; padding: 20px; border-top: 1px solid #eee; background-color: #fafafa;";
-        
-        const storBild = skiva.bild ? `<img src="${skiva.bild}" style="width: 120px; height: 120px; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-right: 20px; object-fit: cover;">` : '';
-
-        let tabellRader = `
-            <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal; width: 140px;">Format:</th>
-                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.format}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal;">Utgivningsår:</th>
-                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.ar || 'Okänt'}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal;">Skivbolag:</th>
-                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.bolag}</td>
-            </tr>
-        `;
-
-        if (settings.katalog) {
-            tabellRader += `
-            <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal;">Katalognummer:</th>
-                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.katalognummer}</td>
-            </tr>`;
-        }
-
-        if (settings.genre) {
-            tabellRader += `
-            <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal;">Genre / Stil:</th>
-                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.genre} ${skiva.stil ? '- ' + skiva.stil : ''}</td>
-            </tr>`;
-        }
-        
-        if (settings.url) {
-            tabellRader += `
-            <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal; vertical-align: top;">Länk:</th>
-                <td style="padding: 8px 0;">
-                    <a href="${skiva.discogs_url}" target="_blank" style="color: #4285F4; text-decoration: none; word-break: break-all;">${skiva.discogs_url}</a>
-                </td>
-            </tr>`;
-        }
-
-        if (settings.price) {
-            tabellRader += `
-            <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal; vertical-align: top;">Marknadsvärde:</th>
-                <td style="padding: 8px 0; font-weight: normal; color: #666;" id="price-${skiva.id}">
-                    <span style="font-style: italic;">Laddar värdering... ⏳</span>
-                </td>
-            </tr>`;
-        }
-
-        if (settings.tracklist) {
-            tabellRader += `
-            <tr>
-                <th style="padding: 12px 0 8px 0; color: #666; font-weight: normal; vertical-align: top;">Låtlista:</th>
-                <td style="padding: 12px 0 8px 0; font-weight: normal; color: #666;" id="tracklist-${skiva.id}">
-                    <span style="font-style: italic;">Laddar låtlista... ⏳</span>
-                </td>
-            </tr>`;
-        }
-
-        detailsRow.innerHTML = `
-            <div style="display: flex; align-items: flex-start;">
-                ${storBild}
-                <div style="flex-grow: 1; min-width: 0;">
-                    <h4 style="margin: 0 0 15px 0; color: #333; font-size: 16px;">Detaljerad Information</h4>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
-                        ${tabellRader}
-                    </table>
-                </div>
-            </div>
-        `;
-
-        mainRow.onclick = async function() {
-            const isHidden = detailsRow.style.display === 'none';
-            detailsRow.style.display = isHidden ? 'block' : 'none';
-            const arrowSpan = mainRow.querySelector('span');
-            arrowSpan.innerText = isHidden ? '▲ Stäng' : '▼ Info';
-            arrowSpan.style.color = isHidden ? '#333' : '#aaa';
-
-            if (isHidden && (settings.tracklist || settings.price)) {
-                const tracklistTd = document.getElementById(`tracklist-${skiva.id}`);
-                const priceTd = document.getElementById(`price-${skiva.id}`);
-                
-                const needsTracklist = tracklistTd && tracklistTd.innerText.includes('Laddar');
-                const needsPrice = priceTd && priceTd.innerText.includes('Laddar');
-
-                if (needsTracklist || needsPrice) {
-                    const token = localStorage.getItem('discogs_token');
-                    const secret = localStorage.getItem('discogs_secret');
+            <section id="view-collection" class="view-section active">
+                <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
                     
-                    try {
-                        const response = await fetch(`/api/discogs/release/${skiva.id}?token=${token}&secret=${secret}`);
-                        const data = await response.json();
-                        
-                        if (needsTracklist) {
-                            if (data.tracklist && data.tracklist.length > 0) {
-                                let html = '<ul style="margin: 0; padding-left: 20px;">';
-                                data.tracklist.forEach(track => {
-                                    html += `<li style="margin-bottom: 4px;"><strong>${track.position || '-'}</strong> ${track.title} <em style="color: #888;">${track.duration || ''}</em></li>`;
-                                });
-                                html += '</ul>';
-                                tracklistTd.innerHTML = html;
-                            } else {
-                                tracklistTd.innerHTML = '<span style="color: #888;">Ingen låtlista hittades.</span>';
-                            }
-                        }
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
+                        <h2 style="margin: 0; border: none; padding: 0;">Min Samling</h2>
+                        <button class="btn btn-outline" onclick="startSync()" id="sync-btn" style="width: auto; margin: 0; padding: 8px 15px; font-size: 14px;">🔄 Synka från Discogs</button>
+                    </div>
+                    
+                    <div id="collection-status" style="margin-bottom: 20px;"></div>
 
-                        if (needsPrice) {
-                            if (data.prices && Object.keys(data.prices).length > 0) {
-                                const p = data.prices;
-                                const formatPrice = (condition) => {
-                                    return p[condition] ? `<strong>${parseFloat(p[condition].value).toFixed(2)} ${p[condition].currency}</strong>` : '-';
-                                };
-                                
-                                let priceHtml = `
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; font-size: 13px;">
-                                        <div style="background: #e8f0fe; padding: 6px 10px; border-radius: 4px; color: #1a73e8;">M/NM: <br>${formatPrice('Near Mint (NM or M-)')}</div>
-                                        <div style="background: #e8f0fe; padding: 6px 10px; border-radius: 4px; color: #1a73e8;">VG+: <br>${formatPrice('Very Good Plus (VG+)')}</div>
-                                        <div style="background: #e8f0fe; padding: 6px 10px; border-radius: 4px; color: #1a73e8;">VG: <br>${formatPrice('Very Good (VG)')}</div>
-                                        <div style="background: #e8f0fe; padding: 6px 10px; border-radius: 4px; color: #1a73e8;">G+: <br>${formatPrice('Good Plus (G+)')}</div>
-                                    </div>
-                                `;
-                                priceTd.innerHTML = priceHtml;
-                            } else {
-                                priceTd.innerHTML = '<span style="color: #888;">Ingen försäljningshistorik hittades.</span>';
-                            }
-                        }
-                    } catch (e) {
-                        if (needsTracklist) tracklistTd.innerHTML = '<span style="color: #ff4757;">Kunde inte hämta låtlista.</span>';
-                        if (needsPrice) priceTd.innerHTML = '<span style="color: #ff4757;">Kunde inte hämta prisvärdering.</span>';
-                    }
-                }
-            }
-        };
+                    <div id="search-container" style="display: none; margin-bottom: 20px;">
+                        <input type="text" id="search-input" placeholder="Sök i hela din databas..." onkeyup="handleSearch()" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc;">
+                    </div>
+                    
+                    <div id="collection-list" style="display: grid; gap: 15px;"></div>
+                    
+                    <button id="load-more-btn" class="btn btn-outline" onclick="fetchCollection(currentPage + 1)" style="display: none; margin-top: 20px; width: 100%;">Ladda nästa 25 skivor</button>
+                </div>
+            </section>
 
-        item.appendChild(mainRow);
-        item.appendChild(detailsRow);
-        listDiv.appendChild(item);
-    });
-}
+            <section id="view-ads" class="view-section">
+                <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
+                    <h2>Aktiva annonser på Tradera</h2>
+                    <p>Här kommer du kunna se och hantera de annonser du har lagt upp från din samling.</p>
+                </div>
+            </section>
+
+            <section id="view-settings" class="view-section">
+                <div class="card" style="max-width: 600px; margin: 0 auto; text-align: left;">
+                    <h2>Koppla plattformar</h2>
+                    <div style="margin: 20px 0;">
+                        <a href="/api/auth/discogs/login" class="btn btn-discogs">Koppla till Discogs</a>
+                        <a href="/api/tradera/login" class="btn btn-tradera">Koppla till Tradera</a>
+                    </div>
+                    
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                    
+                    <h2>Visningsalternativ för samlingen</h2>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Välj vilken information från Discogs du vill visa i din skivlista.</p>
+                    
+                    <h3 style="font-size: 15px; margin-bottom: 10px; color: #444;">I den kompakta listan:</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-bild" checked style="width: auto; margin-right: 10px;"> Skivomslag
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-format" checked style="width: auto; margin-right: 10px;"> Format (t.ex. LP)
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-ar" checked style="width: auto; margin-right: 10px;"> År
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-bolag" style="width: auto; margin-right: 10px;"> Skivbolag
+                        </label>
+                    </div>
+
+                    <h3 style="font-size: 15px; margin-bottom: 10px; color: #444;">I detaljvyn (när du expanderar en skiva):</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-genre" checked style="width: auto; margin-right: 10px;"> Genre & Stil
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-tracklist" checked style="width: auto; margin-right: 10px;"> Låtlista
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-katalog" checked style="width: auto; margin-right: 10px;"> Katalognummer
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-url" checked style="width: auto; margin-right: 10px;"> Länk till Discogs
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-price" checked style="width: auto; margin-right: 10px;"> Prisvärdering
+                        </label>
+                    </div>
+
+                    <button class="btn btn-outline" onclick="saveDisplaySettings()" style="width: auto;">Spara visningsval</button>
+                    
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                    
+                    <h2>Systeminställningar</h2>
+                    <div class="form-group" style="max-width: 300px; margin: 0 auto 0 0;">
+                        <label for="language">Språk</label>
+                        <select id="language" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px;">
+                            <option value="sv">Svenska</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+</body>
+</html>
