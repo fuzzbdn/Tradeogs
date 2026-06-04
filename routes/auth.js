@@ -26,9 +26,6 @@ const oauth = OAuth({
     },
 });
 
-// Servera statiska filer från mappen "public"
-app.use(express.static('public'));
-
 
 // ==========================================
 // 1. SUPABASE AUTH (Skapa konto & Logga in)
