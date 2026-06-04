@@ -12,7 +12,7 @@ function getCookie(req, name) {
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
-}
+} 
 
 // 1. INLOGGNING TRADERA
 router.get('/login', (req, res) => {
