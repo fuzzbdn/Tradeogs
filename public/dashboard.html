@@ -12,15 +12,46 @@
             background-color: #121212; color: #ffffff;
             display: flex; flex-direction: column; align-items: center;
         }
+        
+        /* NY HEADER-LAYOUT */
         header {
-            width: 100%; background-color: #1e1e1e; padding: 20px 0;
-            text-align: center; border-bottom: 2px solid #333;
-            display: flex; justify-content: space-around; align-items: center;
+            width: 100%; 
+            background-color: #1e1e1e; 
+            padding: 20px 40px;
+            border-bottom: 2px solid #333;
+            display: flex; 
+            justify-content: space-between; /* Skjuter isär innehållet till kanterna */
+            align-items: flex-start;
         }
-        h1 { margin: 0; letter-spacing: 2px; }
+        
+        /* Rubrik till vänster */
+        .header-title {
+            margin: 0;
+            font-size: 24px;
+            color: #aaa;
+            padding-top: 10px;
+        }
+
+        /* Behållare för logga och knapp till höger */
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 15px;
+        }
+
+        /* LOGGAN: 150px hög enligt önskemål */
+        .dash-logo {
+            height: 150px;
+            width: auto;
+            max-width: 100vw; /* Ser till att den inte spränger mobila skärmar */
+            object-fit: contain;
+        }
+
         .logout-btn {
             background: none; border: 1px solid #ff6b6b; color: #ff6b6b;
             padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;
+            transition: all 0.2s;
         }
         .logout-btn:hover { background: #ff6b6b; color: white; }
         
@@ -47,11 +78,8 @@
 
     <script>
         (function() {
-            // 1. Kolla om det finns en sparad session från e-postinloggningen
             let session = localStorage.getItem('supabase_session');
 
-            // 2. Förberedelse för Google: Kolla om vi precis kom tillbaka från Google OAuth.
-            // Supabase skickar nämligen med inloggningsnycklarna efter ett '#' i adressfältet.
             if (window.location.hash) {
                 const hash = window.location.hash.substring(1);
                 const params = new URLSearchParams(hash);
@@ -59,20 +87,13 @@
                 const refreshToken = params.get('refresh_token');
 
                 if (accessToken) {
-                    const oauthSession = {
-                        access_token: accessToken,
-                        refresh_token: refreshToken
-                    };
-                    // Sparar Google-sessionen så den fungerar på samma sätt som e-post
+                    const oauthSession = { access_token: accessToken, refresh_token: refreshToken };
                     localStorage.setItem('supabase_session', JSON.stringify(oauthSession));
                     session = JSON.stringify(oauthSession);
-                    
-                    // Rensa bort den fula texten ur adressfältet så det bara står /dashboard.html
                     history.replaceState(null, null, window.location.pathname);
                 }
             }
 
-            // 3. Om ingen session hittades överhuvudtaget -> Kasta ut till inloggningssidan!
             if (!session) {
                 window.location.href = '/index.html';
             }
@@ -82,8 +103,12 @@
 <body>
 
     <header>
-        <div></div> <h1>TRADEOGS</h1>
-        <button class="logout-btn" onclick="logout()">Logga ut</button>
+        <h1 class="header-title">Instrumentpanel</h1>
+        
+        <div class="header-right">
+            <img src="/tradeogs_logo.png" alt="Tradeogs Logo" class="dash-logo">
+            <button class="logout-btn" onclick="logout()">Logga ut</button>
+        </div>
     </header>
 
     <div class="container">
@@ -97,7 +122,6 @@
 
     <script>
         function logout() {
-            // Rensa sparad data och skicka tillbaka till inloggningen
             localStorage.removeItem('supabase_session');
             window.location.href = '/index.html';
         }
