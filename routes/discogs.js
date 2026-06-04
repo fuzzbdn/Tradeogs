@@ -69,9 +69,13 @@ router.post('/sync-page', async (req, res) => {
             pagination: collectionResponse.data.pagination
         });
 
-    } catch (error) {
-        console.error('Synk Fel:', error.message);
-        res.status(500).json({ error: 'Kunde inte synka sidan.' });
+} catch (error) {
+        console.error('Synk Fel:', error);
+        
+        // Hämta det specifika felmeddelandet (från antingen Supabase eller Discogs)
+        const detailedError = error.details || error.message || 'Okänt fel';
+        
+        res.status(500).json({ error: `Serverfel: ${detailedError}` });
     }
 });
 
