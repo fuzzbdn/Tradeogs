@@ -2,7 +2,7 @@
    1. SÄKERHET & KONTROLLER (Körs vid laddning)
    ========================================= */
 (function checkAuthentication() {
-    // Kollar om användaren är på dashboarden (vi vill inte kasta ut dem från inloggningssidan)
+    // Kollar om användaren är på dashboarden
     const isDashboard = window.location.pathname.includes('dashboard.html');
     let session = localStorage.getItem('supabase_session');
 
@@ -43,7 +43,7 @@
    2. INITIALISERA GRÄNSSNITTET
    ========================================= */
 document.addEventListener("DOMContentLoaded", function() {
-    // Kollar om Discogs är kopplat och uppdaterar knappen på dashboarden
+    // 1. Kolla om Discogs är kopplat och uppdatera knappen på dashboarden
     const discogsToken = localStorage.getItem('discogs_token');
     const discogsBtn = document.querySelector('.btn-discogs');
     
@@ -51,7 +51,23 @@ document.addEventListener("DOMContentLoaded", function() {
         discogsBtn.innerText = "✅ Discogs är kopplat";
         discogsBtn.style.backgroundColor = "#51cf66";
         discogsBtn.style.borderColor = "#51cf66";
-        discogsBtn.style.pointerEvents = "none"; // Gör den oklickbar
+        discogsBtn.style.pointerEvents = "none";
+    }
+
+    // 2. Ladda sparade visningsinställningar
+    const savedSettings = localStorage.getItem('tradeogs_display');
+    if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        const setChecked = (id, val) => { if(document.getElementById(id)) document.getElementById(id).checked = val; };
+        
+        setChecked('set-bild', settings.bild);
+        setChecked('set-format', settings.format);
+        setChecked('set-ar', settings.ar);
+        setChecked('set-bolag', settings.bolag);
+        setChecked('set-genre', settings.genre);
+        setChecked('set-tracklist', settings.tracklist);
+        setChecked('set-matrix', settings.matrix);
+        setChecked('set-price', settings.price);
     }
 });
 
@@ -80,7 +96,6 @@ async function loginUser() {
         });
 
         const result = await response.json();
-
         if (!response.ok) throw new Error(result.error || 'Något gick fel vid inloggningen.');
 
         localStorage.setItem('supabase_session', JSON.stringify(result.session));
@@ -127,7 +142,6 @@ async function registerUser() {
         });
 
         const result = await response.json();
-
         if (!response.ok) throw new Error(result.error || 'Något gick fel.');
 
         if (result.session) {
@@ -148,20 +162,12 @@ async function registerUser() {
 }
 
 /* =========================================
-   4. DASHBOARD-FUNKTIONER
+   4. DASHBOARD-FUNKTIONER & INSTÄLLNINGAR
    ========================================= */
 function switchView(viewName) {
-    // Dölj alla vy-sektioner
-    document.querySelectorAll('.view-section').forEach(section => {
-        section.classList.remove('active');
-    });
-    
-    // Avmarkera alla menyval i sidebar
-    document.querySelectorAll('.menu-item').forEach(item => {
-        item.classList.remove('active');
-    });
+    document.querySelectorAll('.view-section').forEach(section => section.classList.remove('active'));
+    document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
 
-    // Visa den valda vyn och markera menyn
     const viewElement = document.getElementById('view-' + viewName);
     const navElement = document.getElementById('nav-' + viewName);
     
@@ -175,53 +181,42 @@ function logout() {
     localStorage.removeItem('discogs_secret');
     window.location.href = '/index.html';
 }
-/* =========================================
-   5. DISCOGS - HÄMTA, SÖK & INSTÄLLNINGAR
-   ========================================= */
-window.myCollection = []; // Global variabel för att spara listan i minnet
 
-// Ladda sparade inställningar när sidan startar
-document.addEventListener("DOMContentLoaded", function() {
-    const savedSettings = localStorage.getItem('tradeogs_display');
-    if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        if (document.getElementById('set-bild')) document.getElementById('set-bild').checked = settings.bild;
-        if (document.getElementById('set-format')) document.getElementById('set-format').checked = settings.format;
-        if (document.getElementById('set-ar')) document.getElementById('set-ar').checked = settings.ar;
-        if (document.getElementById('set-bolag')) document.getElementById('set-bolag').checked = settings.bolag;
-    }
-});
-
-// Spara inställningar när man klickar på "Spara"
 function saveDisplaySettings() {
     const settings = {
         bild: document.getElementById('set-bild').checked,
         format: document.getElementById('set-format').checked,
         ar: document.getElementById('set-ar').checked,
-        bolag: document.getElementById('set-bolag').checked
+        bolag: document.getElementById('set-bolag').checked,
+        genre: document.getElementById('set-genre').checked,
+        tracklist: document.getElementById('set-tracklist').checked,
+        matrix: document.getElementById('set-matrix').checked,
+        price: document.getElementById('set-price').checked
     };
     localStorage.setItem('tradeogs_display', JSON.stringify(settings));
     
-    // Byt text på knappen tillfälligt för feedback
     const btn = document.querySelector('button[onclick="saveDisplaySettings()"]');
     const oldText = btn.innerText;
     btn.innerText = "✅ Sparat!";
-    btn.style.backgroundColor = "#51cf66";
+    btn.style.backgroundColor = "#51cf66"; 
     btn.style.color = "white";
     
-    setTimeout(() => {
-        btn.innerText = oldText;
-        btn.style.backgroundColor = "transparent";
-        btn.style.color = "#555";
+    setTimeout(() => { 
+        btn.innerText = oldText; 
+        btn.style.backgroundColor = "transparent"; 
+        btn.style.color = "#555"; 
     }, 2000);
 
-    // Rita om listan direkt om vi har skivor laddade
-    if (window.myCollection.length > 0) {
+    if (window.myCollection && window.myCollection.length > 0) {
         renderCollection(window.myCollection);
     }
 }
 
-// Hämta listan från backend
+/* =========================================
+   5. DISCOGS - HÄMTA & RITA UT SAMLING
+   ========================================= */
+window.myCollection = []; 
+
 async function fetchCollection() {
     const token = localStorage.getItem('discogs_token');
     const secret = localStorage.getItem('discogs_secret');
@@ -240,7 +235,6 @@ async function fetchCollection() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Något gick fel.');
 
-        // Spara skivorna i minnet för live-sökning
         window.myCollection = data.skivor; 
 
         statusDiv.innerHTML = `
@@ -249,10 +243,7 @@ async function fetchCollection() {
                 Visar ${data.skivor.length} av totalt ${data.totalt_i_samlingen} sparade skivor.
             </p>`;
         
-        // Visa sökfältet nu när vi har data
         document.getElementById('search-container').style.display = 'block';
-        
-        // Rita ut listan
         renderCollection(window.myCollection);
 
     } catch (error) {
@@ -260,26 +251,21 @@ async function fetchCollection() {
     }
 }
 
-// Sökfunktion (Körs varje gång du trycker på en tangent i sökfältet)
 function filterCollection() {
     const query = document.getElementById('search-input').value.toLowerCase();
-    
-    // Filtrera fram skivor där artist eller titel matchar sökningen
     const filteredList = window.myCollection.filter(skiva => {
         return skiva.artist.toLowerCase().includes(query) || skiva.titel.toLowerCase().includes(query);
     });
-
     renderCollection(filteredList);
 }
 
-// Funktionen som bygger upp HTML:en för skivorna baserat på dina inställningar
-// Funktionen som bygger upp HTML:en för skivorna baserat på dina inställningar
 function renderCollection(skivor) {
     const listDiv = document.getElementById('collection-list');
-    listDiv.innerHTML = ''; // Töm den gamla listan
+    listDiv.innerHTML = ''; 
 
-    // Hämta aktuella inställningar
-    const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || { bild: true, format: true, ar: true, bolag: false };
+    const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || { 
+        bild: true, format: true, ar: true, bolag: false, genre: true, tracklist: true, matrix: false, price: true 
+    };
 
     if (skivor.length === 0) {
         listDiv.innerHTML = '<p style="color: #888;">Inga skivor hittades.</p>';
@@ -287,11 +273,10 @@ function renderCollection(skivor) {
     }
 
     skivor.forEach(skiva => {
-        // Huvudbehållaren för hela skivan (både minimerad och expanderad vy)
         const item = document.createElement('div');
         item.style.cssText = "border: 1px solid #e1e4e8; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.02); overflow: hidden; transition: all 0.2s;";
         
-        // 1. Bygg bilden för den kompakta vyn
+        // 1. Kompakt vy (Huvudraden)
         let bildHtml = '';
         if (settings.bild) {
             bildHtml = skiva.bild 
@@ -299,7 +284,6 @@ function renderCollection(skivor) {
                 : `<div style="width: 60px; height: 60px; background: #e1e4e8; border-radius: 4px; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px;">💿</div>`;
         }
 
-        // 2. Bygg textraden för den kompakta vyn baserat på inställningar
         let infoArray = [];
         if (settings.format) infoArray.push(skiva.format);
         if (settings.ar) infoArray.push(skiva.ar || 'Okänt år');
@@ -309,11 +293,9 @@ function renderCollection(skivor) {
             ? `<span style="font-size: 13px; color: #666; display: block; margin-top: 4px;">${infoArray.join(' • ')}</span>`
             : '';
 
-        // 3. Den synliga klickbara raden
         const mainRow = document.createElement('div');
         mainRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; cursor: pointer;";
         
-        // Notera event.stopPropagation() på knappen så att klick på knappen inte öppnar/stänger raden
         mainRow.innerHTML = `
             <div style="display: flex; align-items: center; flex-grow: 1;">
                 ${bildHtml}
@@ -328,11 +310,58 @@ function renderCollection(skivor) {
             </div>
         `;
 
-        // 4. Den dolda, expanderade vyn med all information
+        // 2. Expanderad vy (Detaljraden)
         const detailsRow = document.createElement('div');
         detailsRow.style.cssText = "display: none; padding: 20px; border-top: 1px solid #eee; background-color: #fafafa;";
         
         const storBild = skiva.bild ? `<img src="${skiva.bild}" style="width: 120px; height: 120px; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-right: 20px; object-fit: cover;">` : '';
+
+        let tabellRader = `
+            <tr style="border-bottom: 1px solid #e1e4e8;">
+                <th style="padding: 8px 0; color: #666; font-weight: normal; width: 140px;">Discogs ID:</th>
+                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.id}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e1e4e8;">
+                <th style="padding: 8px 0; color: #666; font-weight: normal;">Format:</th>
+                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.format}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e1e4e8;">
+                <th style="padding: 8px 0; color: #666; font-weight: normal;">Skivbolag:</th>
+                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.bolag} (${skiva.ar || 'Okänt'})</td>
+            </tr>
+        `;
+
+        if (settings.genre) {
+            tabellRader += `
+            <tr style="border-bottom: 1px solid #e1e4e8;">
+                <th style="padding: 8px 0; color: #666; font-weight: normal;">Genre / Stil:</th>
+                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.genre} ${skiva.stil ? '- ' + skiva.stil : ''}</td>
+            </tr>`;
+        }
+        
+        if (settings.tracklist) {
+            tabellRader += `
+            <tr style="border-bottom: 1px solid #e1e4e8;">
+                <th style="padding: 8px 0; color: #666; font-weight: normal;">Låtlista:</th>
+                <td style="padding: 8px 0; font-weight: normal; color: #666; font-style: italic;">Hämtas när du skapar annons...</td>
+            </tr>`;
+        }
+
+        if (settings.matrix) {
+            tabellRader += `
+            <tr style="border-bottom: 1px solid #e1e4e8;">
+                <th style="padding: 8px 0; color: #666; font-weight: normal;">Streckkod/Matrix:</th>
+                <td style="padding: 8px 0; font-weight: normal; color: #666; font-style: italic;">Hämtas när du skapar annons...</td>
+            </tr>`;
+        }
+
+        if (settings.price) {
+            tabellRader += `
+            <tr style="border-bottom: 1px solid #e1e4e8;">
+                <th style="padding: 8px 0; color: #666; font-weight: normal;">Prisvärdering:</th>
+                <td style="padding: 8px 0; font-weight: normal; color: #666; font-style: italic;">Beräknas när du skapar annons...</td>
+            </tr>`;
+        }
 
         detailsRow.innerHTML = `
             <div style="display: flex; align-items: flex-start;">
@@ -340,38 +369,21 @@ function renderCollection(skivor) {
                 <div style="flex-grow: 1;">
                     <h4 style="margin: 0 0 15px 0; color: #333; font-size: 16px;">Detaljerad Information</h4>
                     <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
-                        <tr style="border-bottom: 1px solid #e1e4e8;">
-                            <th style="padding: 8px 0; color: #666; font-weight: normal; width: 120px;">Discogs ID:</th>
-                            <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.id}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #e1e4e8;">
-                            <th style="padding: 8px 0; color: #666; font-weight: normal;">Format:</th>
-                            <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.format}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #e1e4e8;">
-                            <th style="padding: 8px 0; color: #666; font-weight: normal;">Utgivningsår:</th>
-                            <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.ar || 'Okänt'}</td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #e1e4e8;">
-                            <th style="padding: 8px 0; color: #666; font-weight: normal;">Skivbolag:</th>
-                            <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.bolag}</td>
-                        </tr>
+                        ${tabellRader}
                     </table>
                 </div>
             </div>
         `;
 
-        // 5. Lägg till klick-logiken för att visa/dölja detaljerna
+        // 3. Hantera klick för att fälla ut/in detaljerna
         mainRow.onclick = function() {
             const isHidden = detailsRow.style.display === 'none';
             detailsRow.style.display = isHidden ? 'block' : 'none';
-            // Vänder på pilen visuellt
             const arrowSpan = mainRow.querySelector('span');
             arrowSpan.innerText = isHidden ? '▲ Stäng' : '▼ Info';
             arrowSpan.style.color = isHidden ? '#333' : '#aaa';
         };
 
-        // 6. Montera ihop allt och lägg till i listan
         item.appendChild(mainRow);
         item.appendChild(detailsRow);
         listDiv.appendChild(item);
