@@ -3,11 +3,9 @@ const router = express.Router();
 const axios = require('axios');
 const supabase = require('../supabaseClient');
 
-// Hämtar miljövariablerna från din .env / Vercel
 const TRADERA_APP_ID = process.env.TRADERA_APP_ID;
 const TRADERA_APP_KEY = process.env.TRADERA_APP_KEY;
 
-// Hjälpfunktion för att läsa cookies (för att veta vem som loggar in)
 function getCookie(req, name) {
     if (!req.headers.cookie) return null;
     const value = `; ${req.headers.cookie}`;
@@ -16,67 +14,62 @@ function getCookie(req, name) {
     return null;
 }
 
-/* =========================================
-   1. TRADERA INLOGGNING & CALLBACK
-   ========================================= */
+// 1. INLOGGNING TRADERA
+router.get('/login', (req, res) => {
+    const { user_id } = req.query;
 
-// Startar inloggningen mot Tradera
+    if (!TRADERA_APP_ID || !TRADERA_APP_KEY) {
+        return res.status(500).send('Saknar TRADERA_APP_ID eller TRADERA_APP_KEY i miljövariablerna.');
+    }
 
+    if (user_id) {
+        res.cookie('tradera_user_id', user_id, { 
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production', 
+            maxAge: 600000 
+        });
+    }
 
-// Callback-rutten dit Tradera skickar tillbaka användaren efter inloggning
+    const traderaAuthUrl = `https://api.tradera.com/token-login?appId=${TRADERA_APP_ID}&appKey=${TRADERA_APP_KEY}`;
+    res.redirect(traderaAuthUrl);
+});
+
+// 2. CALLBACK FRÅN TRADERA
 router.get('/callback', async (req, res) => {
-    // Tradera skickar med token som en parameter i URL:en
     const { token, userId } = req.query;
     const dbUserId = getCookie(req, 'tradera_user_id');
 
-    if (!token) {
-        return res.status(400).send('Fick ingen token tillbaka från Tradera. Har du aktiverat "Display token on return URL" i Traderas utvecklarportal?');
-    }
-    
-    if (!dbUserId) {
-        return res.status(400).send('Din Tradeogs-session saknas eller har gått ut. Försök att klicka på knappen i dashboarden igen.');
-    }
+    if (!token) return res.status(400).send('Fick ingen token tillbaka från Tradera.');
+    if (!dbUserId) return res.status(400).send('Din Tradeogs-session saknas eller har gått ut.');
 
     try {
-        // Ta bort eventuella gamla Tradera-nycklar för användaren
-        await supabase.from('plattform_tokens')
-            .delete()
+        await supabase.from('plattform_tokens').delete()
             .eq('user_id', dbUserId)
             .eq('plattform', 'tradera');
 
-        // Spara den nya nyckeln
         const { error } = await supabase.from('plattform_tokens').insert({
             user_id: dbUserId,
             plattform: 'tradera',
             access_token: token,
-            token_secret: userId || '' // Sparar Tradera-användarens ID om det behövs senare
+            token_secret: userId || ''
         });
 
         if (error) throw error;
 
-        // Rensa cookien och skicka tillbaka användaren till dashboarden
         res.clearCookie('tradera_user_id');
         res.redirect('/dashboard.html');
 
     } catch (error) {
         console.error('Databasfel:', error.message);
-        res.status(500).send('Misslyckades att spara nycklarna från Tradera i databasen.');
+        res.status(500).send('Misslyckades att spara nycklarna från Tradera.');
     }
 });
 
-/* =========================================
-   2. HÄMTA AKTIVA ANNONSER
-   ========================================= */
+// 3. HÄMTA AKTIVA ANNONSER
 router.get('/active-ads', async (req, res) => {
     const { user_id } = req.query;
 
-    if (!TRADERA_APP_ID || !TRADERA_APP_KEY) {
-        return res.status(500).json({ error: 'Saknar API-nycklar för Tradera på servern.' });
-    }
-
-    if (!user_id) {
-        return res.status(401).json({ error: 'Saknar användar-ID för att hämta token.' });
-    }
+    if (!user_id) return res.status(401).json({ error: 'Saknar användar-ID.' });
 
     try {
         const { data: tokenRecord, error: dbError } = await supabase
@@ -87,7 +80,7 @@ router.get('/active-ads', async (req, res) => {
             .single();
 
         if (dbError || !tokenRecord) {
-            return res.status(404).json({ error: 'Hittade inget kopplat Tradera-konto för denna användare.' });
+            return res.status(404).json({ error: 'Hittade inget kopplat Tradera-konto.' });
         }
 
         const userToken = tokenRecord.access_token;
@@ -112,16 +105,12 @@ router.get('/active-ads', async (req, res) => {
             bild_url: ad.imageUrl
         }));
 
-        res.json({
-            success: true,
-            totalt_annonser: activeAds.length,
-            annonser: activeAds
-        });
+        res.json({ success: true, totalt_annonser: activeAds.length, annonser: activeAds });
 
     } catch (error) {
-        console.error('Tradera API/Database Fel:', error.message);
         res.status(500).json({ error: 'Kunde inte hämta annonser från Tradera.' });
     }
 });
 
+// MÅSTE LIGGA LÄNGST NER!
 module.exports = router;
