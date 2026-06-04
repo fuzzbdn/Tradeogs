@@ -41,8 +41,8 @@ router.get('/collection', async (req, res) => {
         // Plocka ut användarnamnet automatiskt!
         const username = identityResponse.data.username;
 
-        // STEG 2: Använd namnet för att hämta samlingen (Max 10 skivor för test)
-        const collectionUrl = `https://api.discogs.com/users/${username}/collection/folders/0/releases?per_page=10`;
+// STEG 2: Använd namnet för att hämta samlingen (Hämtar nu 100 skivor åt gången)
+        const collectionUrl = `https://api.discogs.com/users/${username}/collection/folders/0/releases?per_page=100`;
         const collectionRequest = { url: collectionUrl, method: 'GET' };
         const collectionAuthHeader = oauth.toHeader(oauth.authorize(collectionRequest, userToken));
 
@@ -53,14 +53,15 @@ router.get('/collection', async (req, res) => {
             }
         });
 
-        // Plocka ut den data vi vill visa på skärmen
+        // Plocka ut datan, nu med skivbolag tillagt!
         const releases = collectionResponse.data.releases.map(item => ({
             id: item.id,
             artist: item.basic_information.artists[0].name,
             titel: item.basic_information.title,
             ar: item.basic_information.year,
             format: item.basic_information.formats[0].name,
-            bild: item.basic_information.thumb || '' // Hämtar en liten bild på omslaget!
+            bolag: item.basic_information.labels ? item.basic_information.labels[0].name : 'Okänt',
+            bild: item.basic_information.thumb || '' 
         }));
 
         res.json({
