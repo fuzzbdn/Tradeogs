@@ -75,7 +75,7 @@
                     
                     <!-- Visningsalternativ för samlingen -->
 <!-- Visningsalternativ för samlingen -->
-                    <h2>Visningsalternativ för samlingen</h2>
+<h2>Visningsalternativ för samlingen</h2>
                     <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Välj vilken information från Discogs du vill visa i din skivlista.</p>
                     
                     <h3 style="font-size: 15px; margin-bottom: 10px; color: #444;">I den kompakta listan:</h3>
@@ -108,6 +108,17 @@
                         <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
                             <input type="checkbox" id="set-price" checked style="width: auto; margin-right: 10px;"> Prisvärdering
                         </label>
+                    </div>
+
+                    <div class="form-group" style="max-width: 300px; margin-bottom: 25px;">
+                        <label for="set-limit">Antal skivor att ladda (Max 500)</label>
+                        <select id="set-limit" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px;">
+                            <option value="25">25 skivor</option>
+                            <option value="50">50 skivor</option>
+                            <option value="100" selected>100 skivor</option>
+                            <option value="250">250 skivor</option>
+                            <option value="500">500 skivor</option>
+                        </select>
                     </div>
 
                     <button class="btn btn-outline" onclick="saveDisplaySettings()" style="width: auto;">Spara visningsval</button>
