@@ -36,11 +36,16 @@
         <main class="main-content">
             
             <!-- VY 1: MIN SAMLING -->
-            <section id="view-collection" class="view-section">
-                <div class="card" style="text-align: left;">
-                    <h2>Din Discogs-samling</h2>
-                    <p>Här kommer dina skivor att listas. Du behöver koppla ditt Discogs-konto under <b>Inställningar</b> för att hämta data.</p>
-                    <!-- Här bygger vi listan med skivor i nästa steg -->
+<section id="view-collection" class="view-section">
+                <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
+                    <h2>Min Discogs-samling</h2>
+                    
+                    <div id="collection-status">
+                        <p>Klicka på knappen nedan för att ladda in dina skivor från Discogs.</p>
+                        <button class="btn btn-primary" onclick="fetchCollection()" style="width: auto; padding: 10px 20px;">Ladda samling</button>
+                    </div>
+                    
+                    <div id="collection-list" style="margin-top: 30px; display: grid; gap: 15px;"></div>
                 </div>
             </section>
 
