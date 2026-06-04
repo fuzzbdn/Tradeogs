@@ -8,17 +8,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Importera våra rutter
+// 1. Importera alla dina rutter från routes-mappen
 const authRoutes = require('./routes/auth');
-
-// Säg åt servern att använda rutterna
-app.use('/api/auth', authRoutes);
-
 const discogsRoutes = require('./routes/discogs');
-app.use('/api/discogs', discogsRoutes);
-
 const traderaRoutes = require('./routes/tradera');
-app.use('/api/tradera', traderaRoutes);
+
+// 2. Berätta för servern vilka webbadresser som går till vilken fil
+app.use('/api/auth', authRoutes);
+app.use('/api/discogs', discogsRoutes);
+app.use('/api/tradera', traderaRoutes); // Det är denna rad som saknades för att länken ska fungera!
 
 // Den vanliga välkomst-rutten
 app.get('/', (req, res) => {
