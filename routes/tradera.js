@@ -30,8 +30,7 @@ router.get('/login', (req, res) => {
         });
     }
 
-    const traderaAuthUrl = `https://api.tradera.com/token-login?appId=${TRADERA_APP_ID}&appKey=${TRADERA_APP_KEY}`;
-    res.redirect(traderaAuthUrl);
+const traderaAuthUrl = `https://api.tradera.com/token-login?appId=${TRADERA_APP_ID}&pkey=${TRADERA_APP_KEY}`;    res.redirect(traderaAuthUrl);
 });
 
 // 2. CALLBACK FRÅN TRADERA
