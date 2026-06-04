@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tradeogs</title>
+    
+    <!-- Länka till extern CSS -->
     <link rel="stylesheet" href="/style.css">
     
-    </head>
+    <!-- Länka till extern JavaScript -->
+    <script src="/app.js" defer></script>
+</head>
 <body>
 
     <div class="login-card">
@@ -31,42 +35,6 @@
         <div id="status-message" class="message"></div>
     </div>
 
-    <script>
-        async function loginUser() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const statusDiv = document.getElementById('status-message');
 
-            if (!email || !password) {
-                statusDiv.style.color = '#ff4757';
-                statusDiv.innerText = 'Vänligen fyll i både e-post och lösenord.';
-                return;
-            }
-
-            statusDiv.style.color = '#666';
-            statusDiv.innerText = 'Loggar in...';
-
-            try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.error || 'Något gick fel vid inloggningen.');
-                }
-
-                localStorage.setItem('supabase_session', JSON.stringify(result.session));
-                window.location.href = '/dashboard.html';
-
-            } catch (error) {
-                statusDiv.style.color = '#ff4757';
-                statusDiv.innerText = error.message;
-            }
-        }
-    </script>
 </body>
 </html>
