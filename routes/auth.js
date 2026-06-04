@@ -1,80 +1,154 @@
 const express = require('express');
 const router = express.Router();
-const supabase = require('../supabaseClient'); // Vår färdiga Supabase-klient
+const axios = require('axios');
+const crypto = require('crypto');
+const OAuth = require('oauth-1.0a');
+const supabase = require('../supabaseClient');
 
-// --- SKAPA KONTO (E-POST & LÖSENORD) ---
+// Hjälpfunktion för att läsa cookies (används av Discogs)
+function getCookie(req, name) {
+    if (!req.headers.cookie) return null;
+    const value = `; ${req.headers.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
+// Konfigurera OAuth 1.0a för Discogs
+const oauth = OAuth({
+    consumer: { 
+        key: process.env.DISCOGS_CONSUMER_KEY, 
+        secret: process.env.DISCOGS_CONSUMER_SECRET 
+    },
+    signature_method: 'HMAC-SHA1',
+    hash_function(base_string, key) {
+        return crypto.createHmac('sha1', key).update(base_string).digest('base64');
+    },
+});
+
+// --- TEST RUTT ---
+router.get('/test', (req, res) => {
+    res.json({ message: 'Auth-systemet lever och har nu ALLA inloggningsrutter redo!' });
+});
+
+
+// ==========================================
+// 1. SUPABASE AUTH (Skapa konto & Logga in)
+// ==========================================
+
 router.post('/register', async (req, res) => {
     const { email, password } = req.body;
-
     if (!email || !password) {
         return res.status(400).json({ error: 'Du måste ange både e-post och lösenord.' });
     }
-
     try {
-        // Supabase sköter kryptering av lösenord och verifieringsmejl automatiskt
-        const { data, error } = await supabase.auth.signUp({
-            email: email,
-            password: password,
-        });
-
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-
-        res.json({
-            message: 'Registrering lyckades! Kontrollera din e-post för verifieringslänk.',
-            user: data.user
-        });
+        res.json({ message: 'Registrering lyckades! Kontrollera din e-post.', user: data.user });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
 });
 
-// --- LOGGA IN (E-POST & LÖSENORD) ---
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
-
     if (!email || !password) {
         return res.status(400).json({ error: 'Du måste ange både e-post och lösenord.' });
     }
-
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-
-        // Här får vi en session-token som frontend kan använda för att hålla användaren inloggad
-        res.json({
-            message: 'Inloggningen lyckades!',
-            session: data.session,
-            user: data.user
-        });
+        res.json({ message: 'Inloggningen lyckades!', session: data.session, user: data.user });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
 });
 
-// --- STARTA INLOGGNING MED GOOGLE ---
 router.get('/google', async (req, res) => {
     const HOST_URL = process.env.HOST_URL || 'http://localhost:3000';
-    
     try {
-        // Vi ber Supabase generera URL:en för Googles inloggningsfönster
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: {
-                // Hit skickas användaren efter att ha godkänt Google-inloggningen
-                redirectTo: `${HOST_URL}/index.html`, 
-            },
+            options: { redirectTo: `${HOST_URL}/index.html` },
         });
-
         if (error) throw error;
-
-        // Skicka användaren vidare till Googles inloggningssida
         res.redirect(data.url);
     } catch (error) {
         res.status(500).json({ error: 'Kunde inte starta Google-inloggning: ' + error.message });
+    }
+});
+
+
+// ==========================================
+// 2. DISCOGS AUTH (OAuth 1.0a)
+// ==========================================
+
+router.get('/discogs/login', async (req, res) => {
+    const requestTokenUrl = 'https://api.discogs.com/oauth/request_token';
+    const HOST_URL = process.env.HOST_URL || 'http://localhost:3000';
+    
+    const requestData = {
+        url: requestTokenUrl,
+        method: 'POST',
+        data: { oauth_callback: `${HOST_URL}/api/auth/discogs/callback` }
+    };
+
+    try {
+        const authHeader = oauth.toHeader(oauth.authorize(requestData));
+        const response = await axios.post(requestTokenUrl, null, {
+            headers: { 
+                'Authorization': authHeader['Authorization'],
+                'User-Agent': 'Tradeogs/1.0'
+            }
+        });
+
+        const params = new URLSearchParams(response.data);
+        const oauth_token = params.get('oauth_token');
+        const oauth_token_secret = params.get('oauth_token_secret');
+
+        res.cookie('discogs_temp_secret', oauth_token_secret, { httpOnly: true, secure: true, maxAge: 600000 });
+        res.redirect(`https://www.discogs.com/oauth/authorize?oauth_token=${oauth_token}`);
+
+    } catch (error) {
+        console.error('Fel vid Request Token:', error.message);
+        res.status(500).send('Kunde inte starta inloggningen mot Discogs.');
+    }
+});
+
+router.get('/discogs/callback', async (req, res) => {
+    const { oauth_token, oauth_verifier } = req.query;
+    const oauth_token_secret = getCookie(req, 'discogs_temp_secret');
+
+    if (!oauth_token || !oauth_verifier || !oauth_token_secret) {
+        return res.status(400).send('Något gick fel, sessionen saknas eller har gått ut. Försök igen.');
+    }
+
+    const accessTokenUrl = 'https://api.discogs.com/oauth/access_token';
+    const requestData = { url: accessTokenUrl, method: 'POST', data: { oauth_verifier } };
+    const token = { key: oauth_token, secret: oauth_token_secret };
+
+    try {
+        const authHeader = oauth.toHeader(oauth.authorize(requestData, token));
+        const response = await axios.post(accessTokenUrl, null, {
+            headers: { 
+                'Authorization': authHeader['Authorization'],
+                'User-Agent': 'Tradeogs/1.0'
+            }
+        });
+
+        const params = new URLSearchParams(response.data);
+        const final_token = params.get('oauth_token');
+        const final_secret = params.get('oauth_token_secret');
+
+        res.json({
+            message: 'Discogs-inloggningen lyckades!',
+            discogs_token: final_token,
+            discogs_secret: final_secret
+        });
+
+    } catch (error) {
+        console.error('Fel vid Access Token:', error.message);
+        res.status(500).send('Misslyckades att hämta de slutgiltiga nycklarna från Discogs.');
     }
 });
 
