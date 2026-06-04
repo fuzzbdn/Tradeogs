@@ -343,8 +343,10 @@ function renderCollection(skivor, append = false) {
         const mainRow = document.createElement('div');
         mainRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; cursor: pointer; flex-wrap: wrap; gap: 10px;";
         
-        // Observera att vi nu använder release_id istället för id för Discogs-anropen
-        const discogsId = skiva.release_id; 
+        // HÄR ÄR UPPDATERINGEN:
+        // Vi behöver release_id för Discogs-API:et, men vi behöver instance_id för DOM-elementen!
+        const releaseId = skiva.release_id;
+        const instanceId = skiva.instance_id || skiva.release_id; // Fallback till release_id om datan råkar vara gammal
 
         mainRow.innerHTML = `
             <div style="display: flex; align-items: center; flex-grow: 1; min-width: 0; padding-right: 15px;">
@@ -357,7 +359,7 @@ function renderCollection(skivor, append = false) {
             
             <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
                 <span style="color: #555; font-size: 13px; width: 65px; text-align: right; display: inline-block; font-weight: 600;">▼ Info</span>
-                <button class="btn btn-tradera" onclick="event.stopPropagation(); alert('Skapar annons för ID: ${discogsId}')" style="margin: 0; padding: 8px 15px; font-size: 14px; width: auto;">Sälj på Tradera</button>
+                <button class="btn btn-tradera" onclick="event.stopPropagation(); alert('Skapar annons för ex: ${instanceId}')" style="margin: 0; padding: 8px 15px; font-size: 14px; width: auto;">Sälj på Tradera</button>
             </div>
         `;
 
@@ -411,7 +413,7 @@ function renderCollection(skivor, append = false) {
             tabellRader += `
             <tr style="border-bottom: 1px solid #e1e4e8;">
                 <th style="padding: 8px 0; color: #666; font-weight: normal; vertical-align: top;">Marknadsvärde:</th>
-                <td style="padding: 8px 0; font-weight: normal; color: #666;" id="price-${discogsId}">
+                <td style="padding: 8px 0; font-weight: normal; color: #666;" id="price-${instanceId}">
                     <span style="font-style: italic;">Laddar värdering... ⏳</span>
                 </td>
             </tr>`;
@@ -421,7 +423,7 @@ function renderCollection(skivor, append = false) {
             tabellRader += `
             <tr>
                 <th style="padding: 12px 0 8px 0; color: #666; font-weight: normal; vertical-align: top;">Låtlista:</th>
-                <td style="padding: 12px 0 8px 0; font-weight: normal; color: #666;" id="tracklist-${discogsId}">
+                <td style="padding: 12px 0 8px 0; font-weight: normal; color: #666;" id="tracklist-${instanceId}">
                     <span style="font-style: italic;">Laddar låtlista... ⏳</span>
                 </td>
             </tr>`;
@@ -447,8 +449,9 @@ function renderCollection(skivor, append = false) {
             arrowSpan.style.color = isHidden ? '#333' : '#aaa';
 
             if (isHidden && (settings.tracklist || settings.price)) {
-                const tracklistTd = document.getElementById(`tracklist-${discogsId}`);
-                const priceTd = document.getElementById(`price-${discogsId}`);
+                // Hämta DOM-elementen med instanceId!
+                const tracklistTd = document.getElementById(`tracklist-${instanceId}`);
+                const priceTd = document.getElementById(`price-${instanceId}`);
                 
                 const needsTracklist = tracklistTd && tracklistTd.innerText.includes('Laddar');
                 const needsPrice = priceTd && priceTd.innerText.includes('Laddar');
@@ -458,7 +461,8 @@ function renderCollection(skivor, append = false) {
                     const secret = localStorage.getItem('discogs_secret');
                     
                     try {
-                        const response = await fetch(`/api/discogs/release/${discogsId}?token=${token}&secret=${secret}`);
+                        // Men hämta från Discogs API med releaseId!
+                        const response = await fetch(`/api/discogs/release/${releaseId}?token=${token}&secret=${secret}`);
                         const data = await response.json();
                         
                         if (needsTracklist) {
