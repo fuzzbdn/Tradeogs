@@ -3,30 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tradeogs - Dashboard</title>
-    <!-- Kopplar in din gemensamma CSS-fil -->
+    <title>Tradeogs</title>
+    
+    <!-- Länka till extern CSS -->
     <link rel="stylesheet" href="/style.css">
-
-    <!-- Säkerhetskontroll (Skickar tillbaka icke-inloggade) -->
-    <script>
-        (function() {
-            let session = localStorage.getItem('supabase_session');
-            if (window.location.hash) {
-                const hash = window.location.hash.substring(1);
-                const params = new URLSearchParams(hash);
-                const accessToken = params.get('access_token');
-                const refreshToken = params.get('refresh_token');
-
-                if (accessToken) {
-                    const oauthSession = { access_token: accessToken, refresh_token: refreshToken };
-                    localStorage.setItem('supabase_session', JSON.stringify(oauthSession));
-                    session = JSON.stringify(oauthSession);
-                    history.replaceState(null, null, window.location.pathname);
-                }
-            }
-            if (!session) { window.location.href = '/index.html'; }
-        })();
-    </script>
+    
+    <!-- Länka till extern JavaScript -->
+    <script src="/app.js" defer></script>
 </head>
 <body>
 
@@ -97,30 +80,6 @@
         </main>
     </div>
 
-    <!-- JavaScript för navigeringen -->
-    <script>
-        function switchView(viewName) {
-            // 1. Dölj alla vy-sektioner
-            document.querySelectorAll('.view-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            // 2. Avmarkera alla menyval i sidebar
-            document.querySelectorAll('.menu-item').forEach(item => {
-                item.classList.remove('active');
-            });
 
-            // 3. Visa den valda vyn
-            document.getElementById('view-' + viewName).classList.add('active');
-            
-            // 4. Markera det valda menyvalet
-            document.getElementById('nav-' + viewName).classList.add('active');
-        }
-
-        function logout() {
-            localStorage.removeItem('supabase_session');
-            window.location.href = '/index.html';
-        }
-    </script>
 </body>
 </html>
