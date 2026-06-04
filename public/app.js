@@ -2,16 +2,13 @@
    1. SÄKERHET & KONTROLLER (Körs vid laddning)
    ========================================= */
 (function checkAuthentication() {
-    // Kollar om användaren är på dashboarden
     const isDashboard = window.location.pathname.includes('dashboard.html');
     let session = localStorage.getItem('supabase_session');
 
-    // Fångar upp nycklar i adressfältet (från Google eller Discogs)
     if (isDashboard && window.location.hash) {
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
         
-        // Google Auth
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
 
@@ -22,7 +19,6 @@
             history.replaceState(null, null, window.location.pathname);
         }
 
-        // Discogs Auth
         const discogsToken = params.get('discogs_token');
         const discogsSecret = params.get('discogs_secret');
         
@@ -33,7 +29,6 @@
         }
     }
 
-    // Har man ingen session och försöker nå dashboarden -> Skicka till login
     if (isDashboard && !session) {
         window.location.href = '/index.html';
     }
@@ -43,7 +38,6 @@
    2. INITIALISERA GRÄNSSNITTET
    ========================================= */
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. Kolla om Discogs är kopplat och uppdatera knappen på dashboarden
     const discogsToken = localStorage.getItem('discogs_token');
     const discogsBtn = document.querySelector('.btn-discogs');
     
@@ -54,7 +48,6 @@ document.addEventListener("DOMContentLoaded", function() {
         discogsBtn.style.pointerEvents = "none";
     }
 
-    // 2. Ladda sparade visningsinställningar
     const savedSettings = localStorage.getItem('tradeogs_display');
     if (savedSettings) {
         const settings = JSON.parse(savedSettings);
@@ -69,10 +62,10 @@ document.addEventListener("DOMContentLoaded", function() {
         setChecked('set-matrix', settings.matrix);
         setChecked('set-price', settings.price);
 
-       // NYTT: Sätt värdet på dropdown-menyn (100 är standard om inget är sparat)
         if (document.getElementById('set-limit')) {
             document.getElementById('set-limit').value = settings.limit || '100';
-    }
+        }
+    } // <--- HÄR ÄR DEN SAKNADE PARENTESEN SOM FÅR ALLT ATT FUNGERA IGEN!
 });
 
 /* =========================================
@@ -196,7 +189,6 @@ function saveDisplaySettings() {
         tracklist: document.getElementById('set-tracklist').checked,
         matrix: document.getElementById('set-matrix').checked,
         price: document.getElementById('set-price').checked,
-       // NYTT: Spara antalet skivor
         limit: document.getElementById('set-limit').value
     };
     localStorage.setItem('tradeogs_display', JSON.stringify(settings));
@@ -236,11 +228,10 @@ async function fetchCollection() {
     statusDiv.innerHTML = '<p style="color: #666;">Hämtar samling från Discogs... ⏳</p>';
     document.getElementById('collection-list').innerHTML = '';
 
-const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || {};
+    const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || {};
     const limit = settings.limit || '100';
 
     try {
-        // NYTT: Skicka med limit i URL:en!
         const response = await fetch(`/api/discogs/collection?token=${token}&secret=${secret}&limit=${limit}`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Något gick fel.');
@@ -286,7 +277,6 @@ function renderCollection(skivor) {
         const item = document.createElement('div');
         item.style.cssText = "border: 1px solid #e1e4e8; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.02); overflow: hidden; transition: all 0.2s;";
         
-        // 1. Kompakt vy (Huvudraden)
         let bildHtml = '';
         if (settings.bild) {
             bildHtml = skiva.bild 
@@ -303,8 +293,7 @@ function renderCollection(skivor) {
             ? `<span style="font-size: 13px; color: #666; display: block; margin-top: 4px;">${infoArray.join(' • ')}</span>`
             : '';
 
-const mainRow = document.createElement('div');
-        // Lade till flex-wrap och gap ifall skärmen är väldigt smal (t.ex. mobil)
+        const mainRow = document.createElement('div');
         mainRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; cursor: pointer; flex-wrap: wrap; gap: 10px;";
         
         mainRow.innerHTML = `
@@ -322,7 +311,6 @@ const mainRow = document.createElement('div');
             </div>
         `;
 
-        // 2. Expanderad vy (Detaljraden)
         const detailsRow = document.createElement('div');
         detailsRow.style.cssText = "display: none; padding: 20px; border-top: 1px solid #eee; background-color: #fafafa;";
         
@@ -387,7 +375,6 @@ const mainRow = document.createElement('div');
             </div>
         `;
 
-        // 3. Hantera klick för att fälla ut/in detaljerna
         mainRow.onclick = function() {
             const isHidden = detailsRow.style.display === 'none';
             detailsRow.style.display = isHidden ? 'block' : 'none';
