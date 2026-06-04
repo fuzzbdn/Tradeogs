@@ -4,77 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tradeogs - Dashboard</title>
-    <style>
-        * { box-sizing: border-box; }
-        body, html {
-            margin: 0; padding: 0; width: 100vw; min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f6f8; /* Ljusgrå bakgrund för hela sidan */
-            color: #333333; /* Mörk text istället för vit */
-            display: flex; flex-direction: column; align-items: center;
-        }
-        
-        header {
-            width: 100%; 
-            background-color: #ffffff; /* Vit header så loggan smälter in */
-            padding: 15px 40px;
-            border-bottom: 1px solid #e1e4e8;
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        /* Ny container för att hålla ihop loggan och rubriken till vänster */
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 20px; /* Mellanrum mellan logga och rubrik */
-        }
-        
-        /* Loggan satt till 50px i höjd */
-        .dash-logo {
-            height: 50px;
-            width: auto;
-        }
-
-        .header-title {
-            margin: 0;
-            font-size: 20px;
-            color: #555;
-            font-weight: 600;
-        }
-
-        .logout-btn {
-            background: none; border: 1px solid #ff4757; color: #ff4757;
-            padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;
-            transition: all 0.2s;
-        }
-        .logout-btn:hover { background: #ff4757; color: white; }
-        
-        .container {
-            width: 100%; max-width: 800px; padding: 40px 20px;
-            display: flex; flex-direction: column; gap: 30px; flex-grow: 1;
-        }
-        .card {
-            background: #ffffff; /* Vita kort */
-            padding: 30px; border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08); /* Mjukare skugga för ljus design */
-            text-align: center;
-        }
-        .card h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 15px; color: #222; }
-        .card p { color: #666; margin-bottom: 25px; }
-        
-        .btn {
-            display: inline-block; color: white; border: none;
-            padding: 12px 24px; margin: 10px; font-size: 16px;
-            font-weight: bold; border-radius: 6px; cursor: pointer;
-            text-decoration: none; transition: opacity 0.2s, transform 0.1s;
-        }
-        .btn:hover { opacity: 0.9; transform: scale(1.02); }
-        .btn-discogs { background-color: #333333; border: 1px solid #222; }
-        .btn-tradera { background-color: #fbd914; color: #121212; }
-    </style>
+    <link rel="stylesheet" href="/style.css">
 
     <script>
         (function() {
