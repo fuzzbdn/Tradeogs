@@ -1,23 +1,22 @@
 const express = require('express');
 const router = express.Router();
 
-// Tvätta nycklarna! .replace(/"/g, '') tar automatiskt bort alla citationstecken.
-const TRADERA_APP_ID = process.env.TRADERA_APP_ID ? process.env.TRADERA_APP_ID.replace(/"/g, '') : '';
-const TRADERA_APP_KEY = process.env.TRADERA_APP_KEY ? process.env.TRADERA_APP_KEY.replace(/"/g, '') : ''; 
+// SKOTTSÄKER TVÄTT: Tar bort alla citattecken, mellanslag, radbrytningar och skräptecken!
+const TRADERA_APP_ID = process.env.TRADERA_APP_ID ? process.env.TRADERA_APP_ID.replace(/[^a-zA-Z0-9-]/g, '') : '';
+const TRADERA_APP_KEY = process.env.TRADERA_APP_KEY ? process.env.TRADERA_APP_KEY.replace(/[^a-zA-Z0-9-]/g, '') : ''; 
 
-// --- STEG 1: SKICKA ANVÄNDAREN TILL TRADERA ---
 router.get('/login', (req, res) => {
+    // Nu är vi 100% säkra på att nycklarna är helt rena
     const traderaAuthUrl = `https://api.tradera.com/token-login?appId=${TRADERA_APP_ID}&pkey=${TRADERA_APP_KEY}`;
     
     res.redirect(traderaAuthUrl);
 });
 
-// --- STEG 2: TRADERA SKICKAR TILLBAKA ANVÄNDAREN HIT ---
 router.get('/callback', (req, res) => {
     const { token, userId, exp } = req.query;
 
     if (!token) {
-        return res.status(400).send('Ingen auktorisering mottogs från Tradera. Har du fyllt i rätt Accept URL i Tradera-portalen?');
+        return res.status(400).send('Ingen auktorisering mottogs från Tradera.');
     }
 
     res.json({
