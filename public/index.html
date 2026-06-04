@@ -3,99 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tradeogs</title>
+    <title>Tradeogs - Logga in</title>
     <style>
-        /* Grundinställningar för att utnyttja hela skärmen */
         * { box-sizing: border-box; }
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            min-height: 100vh;
+            margin: 0; padding: 0; width: 100vw; min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            background-color: #121212; color: #ffffff;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-
-        /* Sidhuvud */
-        header {
-            width: 100%;
-            background-color: #1e1e1e;
-            padding: 20px 0;
-            text-align: center;
-            border-bottom: 2px solid #333;
+        .login-card {
+            background: #1e1e1e; padding: 40px; border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center;
+            width: 100%; max-width: 400px;
         }
-        h1 { margin: 0; letter-spacing: 2px; }
-
-        /* Huvudbehållare som sträcker ut sig */
-        .container {
-            width: 100%;
-            max-width: 800px;
-            padding: 40px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-            flex-grow: 1;
+        h1 { margin-bottom: 20px; letter-spacing: 2px; color: #ffffff; }
+        h2 { font-size: 18px; color: #aaa; margin-bottom: 30px; font-weight: normal; }
+        
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px; }
+        input {
+            width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #333;
+            background-color: #252525; color: white; font-size: 16px;
         }
+        input:focus { border-color: #4285F4; outline: none; }
 
-        /* Sektioner för inloggning */
-        .card {
-            background: #1e1e1e;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            text-align: center;
-        }
-        .card h2 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
-
-        /* Knappar */
         .btn {
-            display: inline-block;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            margin: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: opacity 0.2s, transform 0.1s;
+            display: block; width: 100%; color: white; border: none;
+            padding: 12px; margin: 10px 0; font-size: 16px; font-weight: bold;
+            border-radius: 6px; cursor: pointer; text-decoration: none;
+            transition: opacity 0.2s;
         }
-        .btn:hover { opacity: 0.9; transform: scale(1.02); }
-        .btn:active { transform: scale(0.98); }
-
-        .btn-google { background-color: #4285F4; }
-        .btn-discogs { background-color: #333333; border: 1px solid #555; }
-        .btn-tradera { background-color: #fbd914; color: #121212; }
+        .btn:hover { opacity: 0.9; }
+        .btn-primary { background-color: #4285F4; }
+        .btn-secondary { background-color: #333333; border: 1px solid #555; }
+        .btn-google { background-color: #ffffff; color: #000000; margin-top: 25px; }
+        
+        .divider { margin: 20px 0; color: #555; position: relative; }
+        .message { margin-top: 15px; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <header>
+    <div class="login-card">
         <h1>TRADEOGS</h1>
-    </header>
+        <h2>Logga in eller skapa ett konto</h2>
 
-    <div class="container">
-        
-        <div class="card">
-            <h2>1. Logga in</h2>
-            <p>Skapa ett konto eller logga in för att spara dina kopplingar.</p>
-            <!-- Länken går direkt till den rutt vi skapade i auth.js -->
-            <a href="/api/auth/google" class="btn btn-google">Logga in med Google</a>
+        <div class="form-group">
+            <label for="email">E-postadress</label>
+            <input type="email" id="email" placeholder="namn@domän.com">
         </div>
-        
-        <div class="card">
-            <h2>2. Koppla dina plattformar</h2>
-            <p>Auktorisera Tradeogs att hämta dina skivor och lägga upp annonser.</p>
-            <a href="/api/auth/discogs/login" class="btn btn-discogs">Koppla Discogs</a>
-            <a href="/api/tradera/login" class="btn btn-tradera">Koppla Tradera</a>
+        <div class="form-group">
+            <label for="password">Lösenord</label>
+            <input type="password" id="password" placeholder="Minst 6 tecken">
         </div>
 
+        <button class="btn btn-primary" onclick="handleAuth('/api/auth/login')">Logga in</button>
+        <button class="btn btn-secondary" onclick="handleAuth('/api/auth/register')">Skapa konto</button>
+
+        <div class="divider">eller</div>
+
+        <a href="/api/auth/google" class="btn btn-google">Fortsätt med Google</a>
+
+        <div id="status-message" class="message"></div>
     </div>
 
+    <script>
+        async function handleAuth(endpoint) {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const statusDiv = document.getElementById('status-message');
+
+            if (!email || !password) {
+                statusDiv.style.color = '#ff6b6b';
+                statusDiv.innerText = 'Vänligen fyll i både e-post och lösenord.';
+                return;
+            }
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Något gick fel.');
+                }
+
+                if (endpoint.includes('register')) {
+                    statusDiv.style.color = '#51cf66';
+                    statusDiv.innerText = result.message; // "Registrering lyckades! Kontrollera din e-post."
+                } else {
+                    // Inloggning lyckades! Spara sessionen lokalt och skicka vidare till dashboarden
+                    localStorage.setItem('supabase_session', JSON.stringify(result.session));
+                    window.location.href = '/dashboard.html';
+                }
+
+            } catch (error) {
+                statusDiv.style.color = '#ff6b6b';
+                statusDiv.innerText = error.message;
+            }
+        }
+    </script>
 </body>
 </html>
