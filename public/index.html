@@ -36,18 +36,22 @@
         }
         .btn:hover { opacity: 0.9; }
         .btn-primary { background-color: #4285F4; }
-        .btn-secondary { background-color: #333333; border: 1px solid #555; }
+        
+        /* Knappen "Skapa konto" görs om till en snygg kontur-knapp */
+        .btn-outline { background-color: transparent; border: 1px solid #555; color: #fff; }
+        .btn-outline:hover { border-color: #fff; }
+        
         .btn-google { background-color: #ffffff; color: #000000; margin-top: 25px; }
         
-        .divider { margin: 20px 0; color: #555; position: relative; }
-        .message { margin-top: 15px; font-size: 14px; }
+        .divider { margin: 20px 0; color: #555; position: relative; font-size: 14px; }
+        .message { margin-top: 15px; font-size: 14px; min-height: 20px; }
     </style>
 </head>
 <body>
 
     <div class="login-card">
         <h1>TRADEOGS</h1>
-        <h2>Logga in eller skapa ett konto</h2>
+        <h2>Logga in på ditt konto</h2>
 
         <div class="form-group">
             <label for="email">E-postadress</label>
@@ -55,11 +59,12 @@
         </div>
         <div class="form-group">
             <label for="password">Lösenord</label>
-            <input type="password" id="password" placeholder="Minst 6 tecken">
+            <input type="password" id="password" placeholder="Ditt lösenord">
         </div>
 
-        <button class="btn btn-primary" onclick="handleAuth('/api/auth/login')">Logga in</button>
-        <button class="btn btn-secondary" onclick="handleAuth('/api/auth/register')">Skapa konto</button>
+        <button class="btn btn-primary" onclick="loginUser()">Logga in</button>
+        
+        <a href="/register.html" class="btn btn-outline">Skapa ett nytt konto</a>
 
         <div class="divider">eller</div>
 
@@ -69,7 +74,7 @@
     </div>
 
     <script>
-        async function handleAuth(endpoint) {
+        async function loginUser() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const statusDiv = document.getElementById('status-message');
@@ -80,8 +85,11 @@
                 return;
             }
 
+            statusDiv.style.color = '#aaa';
+            statusDiv.innerText = 'Loggar in...';
+
             try {
-                const response = await fetch(endpoint, {
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -90,17 +98,12 @@
                 const result = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(result.error || 'Något gick fel.');
+                    throw new Error(result.error || 'Något gick fel vid inloggningen.');
                 }
 
-                if (endpoint.includes('register')) {
-                    statusDiv.style.color = '#51cf66';
-                    statusDiv.innerText = result.message; // "Registrering lyckades! Kontrollera din e-post."
-                } else {
-                    // Inloggning lyckades! Spara sessionen lokalt och skicka vidare till dashboarden
-                    localStorage.setItem('supabase_session', JSON.stringify(result.session));
-                    window.location.href = '/dashboard.html';
-                }
+                // Inloggning lyckades! Spara sessionen lokalt och skicka vidare till dashboarden
+                localStorage.setItem('supabase_session', JSON.stringify(result.session));
+                window.location.href = '/dashboard.html';
 
             } catch (error) {
                 statusDiv.style.color = '#ff6b6b';
