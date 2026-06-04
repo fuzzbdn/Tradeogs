@@ -106,12 +106,15 @@ router.get('/active-ads', async (req, res) => {
 
         res.json({ success: true, totalt_annonser: activeAds.length, annonser: activeAds });
 
-    } catch (error) {
-        res.status(500).json({ error: 'Kunde inte hämta annonser från Tradera.' });
-    }
-});
 } catch (error) {
-        res.status(500).json({ error: 'Kunde inte hämta annonser från Tradera.' });
-    }
+           // Fånga upp Traderas exakta felmeddelande
+           const detaljer = error.response ? JSON.stringify(error.response.data) : error.message;
+           console.error('Detaljerat Tradera-fel:', detaljer);
+           
+           // Skicka felet till webbläsaren så du kan se det
+           res.status(500).json({ error: `Tradera säger: ${detaljer}` });
+       }
+});
+
 // MÅSTE LIGGA LÄNGST NER!
 module.exports = router;
