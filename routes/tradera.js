@@ -110,6 +110,8 @@ router.get('/active-ads', async (req, res) => {
         res.status(500).json({ error: 'Kunde inte hämta annonser från Tradera.' });
     }
 });
-
+} catch (error) {
+        res.status(500).json({ error: 'Kunde inte hämta annonser från Tradera.' });
+    }
 // MÅSTE LIGGA LÄNGST NER!
 module.exports = router;
