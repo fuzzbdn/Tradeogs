@@ -15,6 +15,7 @@ const oauth = OAuth({
     },
 });
 
+// RUTT 1: Hämta hela samlingen
 router.get('/collection', async (req, res) => {
     const { token, secret, limit } = req.query;
 
@@ -26,7 +27,6 @@ router.get('/collection', async (req, res) => {
     const userToken = { key: token, secret: secret };
 
     try {
-        // Hämta användarens identitet
         const identityUrl = 'https://api.discogs.com/oauth/identity';
         const identityAuthHeader = oauth.toHeader(oauth.authorize({ url: identityUrl, method: 'GET' }, userToken));
         const identityResponse = await axios.get(identityUrl, {
@@ -35,7 +35,6 @@ router.get('/collection', async (req, res) => {
 
         const username = identityResponse.data.username;
 
-        // Hämta samlingen med den valda limiten
         const collectionUrl = `https://api.discogs.com/users/${username}/collection/folders/0/releases?per_page=${perPage}`;
         const collectionAuthHeader = oauth.toHeader(oauth.authorize({ url: collectionUrl, method: 'GET' }, userToken));
         
@@ -50,6 +49,9 @@ router.get('/collection', async (req, res) => {
             ar: item.basic_information.year,
             format: item.basic_information.formats[0].name,
             bolag: item.basic_information.labels ? item.basic_information.labels[0].name : 'Okänt',
+            // NYTT: Katalognummer och Länk
+            katalognummer: item.basic_information.labels ? item.basic_information.labels[0].catno : 'Okänt',
+            discogs_url: `https://www.discogs.com/release/${item.id}`,
             bild: item.basic_information.thumb || '',
             genre: item.basic_information.genres ? item.basic_information.genres.join(', ') : 'Okänd genre',
             stil: item.basic_information.styles ? item.basic_information.styles.join(', ') : ''
@@ -65,6 +67,30 @@ router.get('/collection', async (req, res) => {
     } catch (error) {
         console.error('Discogs API Fel:', error.message);
         res.status(500).json({ error: 'Kunde inte hämta samlingen.' });
+    }
+});
+
+// RUTT 2: NY! Hämta låtlista för en specifik skiva
+router.get('/release/:id', async (req, res) => {
+    const { token, secret } = req.query;
+    const releaseId = req.params.id;
+
+    if (!token || !secret) return res.status(400).json({ error: 'Saknar nycklar.' });
+    const userToken = { key: token, secret: secret };
+
+    try {
+        const releaseUrl = `https://api.discogs.com/releases/${releaseId}`;
+        const releaseAuthHeader = oauth.toHeader(oauth.authorize({ url: releaseUrl, method: 'GET' }, userToken));
+        
+        const response = await axios.get(releaseUrl, {
+            headers: { 'Authorization': releaseAuthHeader['Authorization'], 'User-Agent': 'Tradeogs/1.0' }
+        });
+
+        // Skickar tillbaka låtlistan!
+        res.json({ tracklist: response.data.tracklist });
+    } catch (error) {
+        console.error('Discogs API Fel (Release):', error.message);
+        res.status(500).json({ error: 'Kunde inte hämta release-data.' });
     }
 });
 
