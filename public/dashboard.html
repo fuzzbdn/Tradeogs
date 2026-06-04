@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tradeogs</title>
+    <title>Tradeogs - Dashboard</title>
     
     <!-- Länka till extern CSS -->
     <link rel="stylesheet" href="/style.css">
     
-    <!-- Länka till extern JavaScript -->
+    <!-- Länka till extern JavaScript (defer gör att sidan laddar snabbare) -->
     <script src="/app.js" defer></script>
 </head>
 <body>
@@ -36,7 +36,7 @@
         <main class="main-content">
             
             <!-- VY 1: MIN SAMLING -->
-<section id="view-collection" class="view-section">
+            <section id="view-collection" class="view-section">
                 <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
                     <h2>Min Discogs-samling</h2>
                     
@@ -45,6 +45,7 @@
                         <button class="btn btn-primary" onclick="fetchCollection()" style="width: auto; padding: 10px 20px;">Ladda samling</button>
                     </div>
 
+                    <!-- Sökfält (Dolt tills samlingen är laddad) -->
                     <div id="search-container" style="display: none; margin-bottom: 20px;">
                         <input type="text" id="search-input" placeholder="Sök på artist eller titel..." onkeyup="filterCollection()" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc;">
                     </div>
@@ -55,28 +56,47 @@
 
             <!-- VY 2: AKTIVA ANNONSER -->
             <section id="view-ads" class="view-section">
-                <div class="card" style="text-align: left;">
+                <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
                     <h2>Aktiva annonser på Tradera</h2>
                     <p>Här kommer du kunna se och hantera de annonser du har lagt upp från din samling.</p>
-                    <!-- Här listar vi Tradera-data i framtiden -->
                 </div>
             </section>
 
             <!-- VY 3: INSTÄLLNINGAR (Aktiv som standard) -->
             <section id="view-settings" class="view-section active">
-                <div class="card" style="max-width: 600px; margin: 0 auto;">
-                    <h2>Koppla dina plattformar</h2>
-                    <p>Auktorisera Tradeogs att hämta dina skivor och lägga upp annonser.</p>
-                    
-                    <div style="margin: 30px 0;">
+                <div class="card" style="max-width: 600px; margin: 0 auto; text-align: left;">
+                    <h2>Koppla plattformar</h2>
+                    <div style="margin: 20px 0;">
                         <a href="/api/auth/discogs/login" class="btn btn-discogs">Koppla till Discogs</a>
                         <a href="/api/tradera/login" class="btn btn-tradera">Koppla till Tradera</a>
                     </div>
                     
                     <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
                     
+                    <!-- Visningsalternativ för samlingen -->
+                    <h2>Visningsalternativ för samlingen</h2>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Välj vilken information från Discogs du vill visa i din skivlista.</p>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-bild" checked style="width: auto; margin-right: 10px;"> Visa Skivomslag
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-format" checked style="width: auto; margin-right: 10px;"> Visa Format (t.ex. LP)
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-ar" checked style="width: auto; margin-right: 10px;"> Visa År
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-bolag" style="width: auto; margin-right: 10px;"> Visa Skivbolag
+                        </label>
+                    </div>
+                    <button class="btn btn-outline" onclick="saveDisplaySettings()" style="width: auto;">Spara visningsval</button>
+                    
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                    
                     <h2>Systeminställningar</h2>
-                    <div class="form-group" style="max-width: 300px; margin: 0 auto;">
+                    <div class="form-group" style="max-width: 300px; margin: 0 auto 0 0;">
                         <label for="language">Språk</label>
                         <select id="language" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px;">
                             <option value="sv">Svenska</option>
@@ -88,7 +108,6 @@
 
         </main>
     </div>
-
 
 </body>
 </html>
