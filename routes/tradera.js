@@ -21,26 +21,7 @@ function getCookie(req, name) {
    ========================================= */
 
 // Startar inloggningen mot Tradera
-router.get('/login', (req, res) => {
-    const { user_id } = req.query;
 
-    if (!TRADERA_APP_ID) {
-        return res.status(500).send('Saknar TRADERA_APP_ID i miljövariablerna.');
-    }
-
-    // Spara Tradeogs-användarens ID i en cookie så vi vet vem som kopplar kontot
-    if (user_id) {
-        res.cookie('tradera_user_id', user_id, { 
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', 
-            maxAge: 600000 // 10 minuter
-        });
-    }
-
-    // Skicka användaren till Traderas inloggningssida för att godkänna appen
-    const traderaAuthUrl = `https://api.tradera.com/token-login?appId=${TRADERA_APP_ID}`;
-    res.redirect(traderaAuthUrl);
-});
 
 // Callback-rutten dit Tradera skickar tillbaka användaren efter inloggning
 router.get('/callback', async (req, res) => {
