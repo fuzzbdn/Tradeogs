@@ -26,10 +26,8 @@ const oauth = OAuth({
     },
 });
 
-// --- TEST RUTT ---
-router.get('/test', (req, res) => {
-    res.json({ message: 'Auth-systemet lever och har nu ALLA inloggningsrutter redo!' });
-});
+// Servera statiska filer från mappen "public"
+app.use(express.static('public'));
 
 
 // ==========================================
