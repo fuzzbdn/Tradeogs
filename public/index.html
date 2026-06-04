@@ -17,8 +17,16 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center;
             width: 100%; max-width: 400px;
         }
-        h1 { margin-bottom: 20px; letter-spacing: 2px; color: #ffffff; }
-        h2 { font-size: 18px; color: #aaa; margin-bottom: 30px; font-weight: normal; }
+        
+        /* NY CSS FÖR LOGGAN PÅ INLOGGNINGSSIDAN */
+        .login-logo {
+            width: 100%; 
+            max-width: 300px; /* Håller den i en bra storlek för kortet */
+            height: auto; 
+            margin-bottom: 20px;
+        }
+
+        h2 { font-size: 18px; color: #aaa; margin-bottom: 30px; font-weight: normal; margin-top: 0; }
         
         .form-group { margin-bottom: 15px; text-align: left; }
         label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px; }
@@ -37,7 +45,6 @@
         .btn:hover { opacity: 0.9; }
         .btn-primary { background-color: #4285F4; }
         
-        /* Knappen "Skapa konto" görs om till en snygg kontur-knapp */
         .btn-outline { background-color: transparent; border: 1px solid #555; color: #fff; }
         .btn-outline:hover { border-color: #fff; }
         
@@ -50,7 +57,8 @@
 <body>
 
     <div class="login-card">
-        <h1>TRADEOGS</h1>
+        <img src="/tradeogs_logo.png" alt="Tradeogs Logo" class="login-logo">
+        
         <h2>Logga in på ditt konto</h2>
 
         <div class="form-group">
@@ -63,11 +71,9 @@
         </div>
 
         <button class="btn btn-primary" onclick="loginUser()">Logga in</button>
-        
         <a href="/register.html" class="btn btn-outline">Skapa ett nytt konto</a>
 
         <div class="divider">eller</div>
-
         <a href="/api/auth/google" class="btn btn-google">Fortsätt med Google</a>
 
         <div id="status-message" class="message"></div>
@@ -101,7 +107,6 @@
                     throw new Error(result.error || 'Något gick fel vid inloggningen.');
                 }
 
-                // Inloggning lyckades! Spara sessionen lokalt och skicka vidare till dashboarden
                 localStorage.setItem('supabase_session', JSON.stringify(result.session));
                 window.location.href = '/dashboard.html';
 
