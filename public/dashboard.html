@@ -27,13 +27,16 @@
             
             <section id="view-collection" class="view-section active">
                 <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
-                    <h2>Min Discogs-samling</h2>
                     
-                    <div id="collection-status" style="margin-bottom: 20px;">
-                        </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
+                        <h2 style="margin: 0; border: none; padding: 0;">Min Samling</h2>
+                        <button class="btn btn-outline" onclick="startSync()" id="sync-btn" style="width: auto; margin: 0; padding: 8px 15px; font-size: 14px;">🔄 Synka från Discogs</button>
+                    </div>
+                    
+                    <div id="collection-status" style="margin-bottom: 20px;"></div>
 
                     <div id="search-container" style="display: none; margin-bottom: 20px;">
-                        <input type="text" id="search-input" placeholder="Sök på artist eller titel bland inlästa skivor..." onkeyup="filterCollection()" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc;">
+                        <input type="text" id="search-input" placeholder="Sök i hela din databas..." onkeyup="handleSearch()" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc;">
                     </div>
                     
                     <div id="collection-list" style="display: grid; gap: 15px;"></div>
