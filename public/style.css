@@ -1,0 +1,83 @@
+/* public/style.css */
+* { box-sizing: border-box; }
+
+body, html {
+    margin: 0; padding: 0; width: 100vw; min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f6f8;
+    color: #333333;
+    display: flex; flex-direction: column; align-items: center;
+}
+
+/* Header & Navigering */
+header {
+    width: 100%; 
+    background-color: #ffffff;
+    padding: 15px 40px;
+    border-bottom: 1px solid #e1e4e8;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.header-left { display: flex; align-items: center; gap: 20px; }
+.header-title { margin: 0; font-size: 20px; color: #555; font-weight: 600; }
+.dash-logo { height: 50px; width: auto; }
+
+/* Kort & Behållare */
+.container {
+    width: 100%; max-width: 800px; padding: 40px 20px;
+    display: flex; flex-direction: column; gap: 30px; flex-grow: 1;
+}
+
+.login-card {
+    background: #ffffff;
+    padding: 40px; border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    text-align: center;
+    width: 100%; max-width: 400px;
+    margin-top: auto; margin-bottom: auto; /* Centrerar vertikalt på loginsidan */
+}
+
+.card {
+    background: #ffffff;
+    padding: 30px; border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    text-align: center;
+}
+
+/* Knappar */
+.btn {
+    display: inline-block; width: 100%; color: white; border: none;
+    padding: 12px; margin: 10px 0; font-size: 16px; font-weight: bold;
+    border-radius: 6px; cursor: pointer; text-decoration: none;
+    transition: all 0.2s; text-align: center;
+}
+.btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-primary { background-color: #4285F4; }
+.btn-outline { background-color: transparent; border: 2px solid #e1e4e8; color: #555; }
+.btn-outline:hover { border-color: #ccc; background-color: #f9f9f9; }
+.btn-google { background-color: #ffffff; color: #333; border: 1px solid #ccc; margin-top: 25px; }
+.btn-discogs { background-color: #333333; color: white; width: auto; }
+.btn-tradera { background-color: #fbd914; color: #121212; width: auto; }
+
+.logout-btn {
+    background: none; border: 1px solid #ff4757; color: #ff4757;
+    padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;
+}
+.logout-btn:hover { background: #ff4757; color: white; }
+
+/* Formulär */
+.form-group { margin-bottom: 15px; text-align: left; }
+label { display: block; margin-bottom: 5px; color: #555; font-size: 14px; font-weight: bold; }
+input {
+    width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc;
+    background-color: #fafafa; color: #333; font-size: 16px;
+}
+input:focus { border-color: #4285F4; outline: none; background-color: #fff; }
+
+/* Övrigt */
+.login-logo { width: 100%; max-width: 280px; height: auto; margin-bottom: 15px; }
+.divider { margin: 20px 0; color: #888; font-size: 14px; }
+.message { margin-top: 15px; font-size: 14px; min-height: 20px; }
