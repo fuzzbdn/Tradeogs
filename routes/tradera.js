@@ -90,11 +90,11 @@ router.get('/active-ads', async (req, res) => {
         const traderaUrl = 'https://api.tradera.com/v4/listings/seller-items'; 
         
         // Tradera V4 kräver specifika X-headers istället för vanliga Bearer tokens
-        const response = await axios.get(traderaUrl, {
+const response = await axios.get(traderaUrl, {
             headers: {
-                'X-App-Id': TRADERA_APP_ID,
+                'X-App-ID': TRADERA_APP_ID,     // Ändrat till stort ID
                 'X-App-Key': TRADERA_APP_KEY,
-                'X-User-Id': traderaUserId,
+                'X-User-ID': traderaUserId,     // Ändrat till stort ID
                 'X-User-Token': userToken,
                 'Accept': 'application/json'
             }
