@@ -15,15 +15,16 @@ const oauth = OAuth({
     },
 });
 
-// RUTT 1: Hämta hela samlingen
+// RUTT 1: Hämta samlingen med pagination
 router.get('/collection', async (req, res) => {
-    const { token, secret, limit } = req.query;
+    const { token, secret, limit, page } = req.query;
 
     if (!token || !secret) {
-        return res.status(400).json({ error: 'Saknar Discogs-nycklar.' });
+        return res.status(401).json({ error: 'Saknar Discogs-nycklar.' });
     }
 
-    const perPage = limit || '100'; 
+    const perPage = limit || '25'; 
+    const currentPage = page || '1';
     const userToken = { key: token, secret: secret };
 
     try {
@@ -35,7 +36,8 @@ router.get('/collection', async (req, res) => {
 
         const username = identityResponse.data.username;
 
-        const collectionUrl = `https://api.discogs.com/users/${username}/collection/folders/0/releases?per_page=${perPage}`;
+        // Här lägger vi till sort och page parametrarna
+        const collectionUrl = `https://api.discogs.com/users/${username}/collection/folders/0/releases?sort=artist&sort_order=asc&page=${currentPage}&per_page=${perPage}`;
         const collectionAuthHeader = oauth.toHeader(oauth.authorize({ url: collectionUrl, method: 'GET' }, userToken));
         
         const collectionResponse = await axios.get(collectionUrl, {
@@ -60,6 +62,7 @@ router.get('/collection', async (req, res) => {
             message: 'Hämtning lyckades!',
             username: username,
             totalt_i_samlingen: collectionResponse.data.pagination.items,
+            pagination: collectionResponse.data.pagination,
             skivor: releases
         });
 
@@ -84,7 +87,6 @@ router.get('/release/:id', async (req, res) => {
         const priceUrl = `https://api.discogs.com/marketplace/price_suggestions/${releaseId}`;
         const priceAuthHeader = oauth.toHeader(oauth.authorize({ url: priceUrl, method: 'GET' }, userToken));
 
-        // Kör båda anropen samtidigt för att spara tid!
         const [releaseRes, priceRes] = await Promise.allSettled([
             axios.get(releaseUrl, { headers: { 'Authorization': releaseAuthHeader['Authorization'], 'User-Agent': 'Tradeogs/1.0' } }),
             axios.get(priceUrl, { headers: { 'Authorization': priceAuthHeader['Authorization'], 'User-Agent': 'Tradeogs/1.0' } })
