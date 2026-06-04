@@ -9,61 +9,61 @@
         body, html {
             margin: 0; padding: 0; width: 100vw; min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212; color: #ffffff;
+            background-color: #f4f6f8; /* Ljusgrå bakgrund för hela sidan */
+            color: #333333; /* Mörk text istället för vit */
             display: flex; flex-direction: column; align-items: center;
         }
         
-        /* NY HEADER-LAYOUT */
         header {
             width: 100%; 
-            background-color: #1e1e1e; 
-            padding: 20px 40px;
-            border-bottom: 2px solid #333;
+            background-color: #ffffff; /* Vit header så loggan smälter in */
+            padding: 15px 40px;
+            border-bottom: 1px solid #e1e4e8;
             display: flex; 
-            justify-content: space-between; /* Skjuter isär innehållet till kanterna */
-            align-items: flex-start;
+            justify-content: space-between; 
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* Ny container för att hålla ihop loggan och rubriken till vänster */
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px; /* Mellanrum mellan logga och rubrik */
         }
         
-        /* Rubrik till vänster */
+        /* Loggan satt till 50px i höjd */
+        .dash-logo {
+            height: 50px;
+            width: auto;
+        }
+
         .header-title {
             margin: 0;
-            font-size: 24px;
-            color: #aaa;
-            padding-top: 10px;
-        }
-
-        /* Behållare för logga och knapp till höger */
-        .header-right {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 15px;
-        }
-
-        /* LOGGAN: 150px hög enligt önskemål */
-        .dash-logo {
-            height: 150px;
-            width: auto;
-            max-width: 100vw; /* Ser till att den inte spränger mobila skärmar */
-            object-fit: contain;
+            font-size: 20px;
+            color: #555;
+            font-weight: 600;
         }
 
         .logout-btn {
-            background: none; border: 1px solid #ff6b6b; color: #ff6b6b;
+            background: none; border: 1px solid #ff4757; color: #ff4757;
             padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;
             transition: all 0.2s;
         }
-        .logout-btn:hover { background: #ff6b6b; color: white; }
+        .logout-btn:hover { background: #ff4757; color: white; }
         
         .container {
             width: 100%; max-width: 800px; padding: 40px 20px;
             display: flex; flex-direction: column; gap: 30px; flex-grow: 1;
         }
         .card {
-            background: #1e1e1e; padding: 30px; border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center;
+            background: #ffffff; /* Vita kort */
+            padding: 30px; border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); /* Mjukare skugga för ljus design */
+            text-align: center;
         }
-        .card h2 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .card h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 15px; color: #222; }
+        .card p { color: #666; margin-bottom: 25px; }
         
         .btn {
             display: inline-block; color: white; border: none;
@@ -72,7 +72,7 @@
             text-decoration: none; transition: opacity 0.2s, transform 0.1s;
         }
         .btn:hover { opacity: 0.9; transform: scale(1.02); }
-        .btn-discogs { background-color: #333333; border: 1px solid #555; }
+        .btn-discogs { background-color: #333333; border: 1px solid #222; }
         .btn-tradera { background-color: #fbd914; color: #121212; }
     </style>
 
@@ -103,12 +103,12 @@
 <body>
 
     <header>
-        <h1 class="header-title">Instrumentpanel</h1>
-        
-        <div class="header-right">
+        <div class="header-left">
             <img src="/tradeogs_logo.png" alt="Tradeogs Logo" class="dash-logo">
-            <button class="logout-btn" onclick="logout()">Logga ut</button>
+            <h1 class="header-title">Instrumentpanel</h1>
         </div>
+        
+        <button class="logout-btn" onclick="logout()">Logga ut</button>
     </header>
 
     <div class="container">
