@@ -1,5 +1,5 @@
 /* =========================================
-   1. SÄKERHET & KONTROLLER (Körs vid laddning)
+   1. SÄKERHET & KONTROLLER
    ========================================= */
 (function checkAuthentication() {
     const isDashboard = window.location.pathname.includes('dashboard.html');
@@ -29,9 +29,7 @@
         }
     }
 
-    if (isDashboard && !session) {
-        window.location.href = '/index.html';
-    }
+    if (isDashboard && !session) window.location.href = '/index.html';
 })();
 
 /* =========================================
@@ -59,13 +57,15 @@ document.addEventListener("DOMContentLoaded", function() {
         setChecked('set-bolag', settings.bolag);
         setChecked('set-genre', settings.genre);
         setChecked('set-tracklist', settings.tracklist);
+        setChecked('set-katalog', settings.katalog); // NY
+        setChecked('set-url', settings.url); // NY
         setChecked('set-matrix', settings.matrix);
         setChecked('set-price', settings.price);
 
         if (document.getElementById('set-limit')) {
             document.getElementById('set-limit').value = settings.limit || '100';
         }
-    } // <--- HÄR ÄR DEN SAKNADE PARENTESEN SOM FÅR ALLT ATT FUNGERA IGEN!
+    }
 });
 
 /* =========================================
@@ -77,30 +77,22 @@ async function loginUser() {
     const statusDiv = document.getElementById('status-message');
 
     if (!email || !password) {
-        statusDiv.style.color = '#ff4757';
-        statusDiv.innerText = 'Vänligen fyll i både e-post och lösenord.';
-        return;
+        statusDiv.style.color = '#ff4757'; statusDiv.innerText = 'Vänligen fyll i både e-post och lösenord.'; return;
     }
 
-    statusDiv.style.color = '#666';
-    statusDiv.innerText = 'Loggar in...';
+    statusDiv.style.color = '#666'; statusDiv.innerText = 'Loggar in...';
 
     try {
         const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Något gick fel vid inloggningen.');
-
+        if (!response.ok) throw new Error(result.error || 'Något gick fel.');
         localStorage.setItem('supabase_session', JSON.stringify(result.session));
         window.location.href = '/dashboard.html';
-
     } catch (error) {
-        statusDiv.style.color = '#ff4757';
-        statusDiv.innerText = error.message;
+        statusDiv.style.color = '#ff4757'; statusDiv.innerText = error.message;
     }
 }
 
@@ -110,51 +102,24 @@ async function registerUser() {
     const confirmPassword = document.getElementById('confirm-password')?.value;
     const statusDiv = document.getElementById('status-message');
 
-    if (!email || !password || !confirmPassword) {
-        statusDiv.style.color = '#ff4757';
-        statusDiv.innerText = 'Vänligen fyll i alla fält.';
-        return;
-    }
+    if (!email || !password || !confirmPassword) { statusDiv.style.color = '#ff4757'; statusDiv.innerText = 'Fyll i alla fält.'; return; }
+    if (password !== confirmPassword) { statusDiv.style.color = '#ff4757'; statusDiv.innerText = 'Lösenorden matchar inte.'; return; }
+    if (password.length < 6) { statusDiv.style.color = '#ff4757'; statusDiv.innerText = 'Lösenordet måste vara minst 6 tecken.'; return; }
 
-    if (password !== confirmPassword) {
-        statusDiv.style.color = '#ff4757';
-        statusDiv.innerText = 'Lösenorden matchar inte varandra.';
-        return;
-    }
-
-    if (password.length < 6) {
-        statusDiv.style.color = '#ff4757';
-        statusDiv.innerText = 'Lösenordet måste vara minst 6 tecken långt.';
-        return;
-    }
-
-    statusDiv.style.color = '#666';
-    statusDiv.innerText = 'Skapar konto...';
+    statusDiv.style.color = '#666'; statusDiv.innerText = 'Skapar konto...';
 
     try {
         const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Något gick fel.');
-
-        if (result.session) {
-            localStorage.setItem('supabase_session', JSON.stringify(result.session));
-        }
-
-        statusDiv.style.color = '#51cf66';
-        statusDiv.innerText = 'Konto skapat! Skickar dig vidare...';
-        
-        setTimeout(() => {
-            window.location.href = '/dashboard.html';
-        }, 1500);
-
+        if (result.session) localStorage.setItem('supabase_session', JSON.stringify(result.session));
+        statusDiv.style.color = '#51cf66'; statusDiv.innerText = 'Konto skapat! Skickar dig vidare...';
+        setTimeout(() => { window.location.href = '/dashboard.html'; }, 1500);
     } catch (error) {
-        statusDiv.style.color = '#ff4757';
-        statusDiv.innerText = error.message;
+        statusDiv.style.color = '#ff4757'; statusDiv.innerText = error.message;
     }
 }
 
@@ -164,12 +129,8 @@ async function registerUser() {
 function switchView(viewName) {
     document.querySelectorAll('.view-section').forEach(section => section.classList.remove('active'));
     document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-
-    const viewElement = document.getElementById('view-' + viewName);
-    const navElement = document.getElementById('nav-' + viewName);
-    
-    if (viewElement) viewElement.classList.add('active');
-    if (navElement) navElement.classList.add('active');
+    document.getElementById('view-' + viewName)?.classList.add('active');
+    document.getElementById('nav-' + viewName)?.classList.add('active');
 }
 
 function logout() {
@@ -187,6 +148,8 @@ function saveDisplaySettings() {
         bolag: document.getElementById('set-bolag').checked,
         genre: document.getElementById('set-genre').checked,
         tracklist: document.getElementById('set-tracklist').checked,
+        katalog: document.getElementById('set-katalog').checked, // NY
+        url: document.getElementById('set-url').checked, // NY
         matrix: document.getElementById('set-matrix').checked,
         price: document.getElementById('set-price').checked,
         limit: document.getElementById('set-limit').value
@@ -195,19 +158,10 @@ function saveDisplaySettings() {
     
     const btn = document.querySelector('button[onclick="saveDisplaySettings()"]');
     const oldText = btn.innerText;
-    btn.innerText = "✅ Sparat!";
-    btn.style.backgroundColor = "#51cf66"; 
-    btn.style.color = "white";
-    
-    setTimeout(() => { 
-        btn.innerText = oldText; 
-        btn.style.backgroundColor = "transparent"; 
-        btn.style.color = "#555"; 
-    }, 2000);
+    btn.innerText = "✅ Sparat!"; btn.style.backgroundColor = "#51cf66"; btn.style.color = "white";
+    setTimeout(() => { btn.innerText = oldText; btn.style.backgroundColor = "transparent"; btn.style.color = "#555"; }, 2000);
 
-    if (window.myCollection && window.myCollection.length > 0) {
-        renderCollection(window.myCollection);
-    }
+    if (window.myCollection && window.myCollection.length > 0) renderCollection(window.myCollection);
 }
 
 /* =========================================
@@ -264,8 +218,10 @@ function renderCollection(skivor) {
     const listDiv = document.getElementById('collection-list');
     listDiv.innerHTML = ''; 
 
+    // STANDARDINSTÄLLNINGAR OM INGET ÄR SPARAT
     const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || { 
-        bild: true, format: true, ar: true, bolag: false, genre: true, tracklist: true, matrix: false, price: true 
+        bild: true, format: true, ar: true, bolag: false, genre: true, 
+        tracklist: true, katalog: true, url: true, matrix: false, price: true 
     };
 
     if (skivor.length === 0) {
@@ -331,6 +287,14 @@ function renderCollection(skivor) {
             </tr>
         `;
 
+        if (settings.katalog) {
+            tabellRader += `
+            <tr style="border-bottom: 1px solid #e1e4e8;">
+                <th style="padding: 8px 0; color: #666; font-weight: normal;">Katalognummer:</th>
+                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.katalognummer}</td>
+            </tr>`;
+        }
+
         if (settings.genre) {
             tabellRader += `
             <tr style="border-bottom: 1px solid #e1e4e8;">
@@ -342,24 +306,20 @@ function renderCollection(skivor) {
         if (settings.tracklist) {
             tabellRader += `
             <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal;">Låtlista:</th>
-                <td style="padding: 8px 0; font-weight: normal; color: #666; font-style: italic;">Hämtas när du skapar annons...</td>
+                <th style="padding: 8px 0; color: #666; font-weight: normal; vertical-align: top;">Låtlista:</th>
+                <td style="padding: 8px 0; font-weight: normal; color: #666;" id="tracklist-${skiva.id}">
+                    <span style="font-style: italic;">Laddar låtlista... ⏳</span>
+                </td>
             </tr>`;
         }
 
-        if (settings.matrix) {
+        if (settings.url) {
             tabellRader += `
             <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal;">Streckkod/Matrix:</th>
-                <td style="padding: 8px 0; font-weight: normal; color: #666; font-style: italic;">Hämtas när du skapar annons...</td>
-            </tr>`;
-        }
-
-        if (settings.price) {
-            tabellRader += `
-            <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal;">Prisvärdering:</th>
-                <td style="padding: 8px 0; font-weight: normal; color: #666; font-style: italic;">Beräknas när du skapar annons...</td>
+                <th style="padding: 8px 0; color: #666; font-weight: normal;">Discogslänk:</th>
+                <td style="padding: 8px 0;">
+                    <a href="${skiva.discogs_url}" target="_blank" style="color: #4285F4; text-decoration: none; font-weight: bold;">Öppna på Discogs ↗</a>
+                </td>
             </tr>`;
         }
 
@@ -375,12 +335,41 @@ function renderCollection(skivor) {
             </div>
         `;
 
-        mainRow.onclick = function() {
+        mainRow.onclick = async function() {
             const isHidden = detailsRow.style.display === 'none';
             detailsRow.style.display = isHidden ? 'block' : 'none';
             const arrowSpan = mainRow.querySelector('span');
             arrowSpan.innerText = isHidden ? '▲ Stäng' : '▼ Info';
             arrowSpan.style.color = isHidden ? '#333' : '#aaa';
+
+            // HÄMTA LÅTLISTAN DYNAMISKT! (Bara om det behövs)
+            if (isHidden && settings.tracklist) {
+                const tracklistTd = document.getElementById(`tracklist-${skiva.id}`);
+                
+                // Körs bara om texten innehåller "Laddar"
+                if (tracklistTd && tracklistTd.innerText.includes('Laddar')) {
+                    const token = localStorage.getItem('discogs_token');
+                    const secret = localStorage.getItem('discogs_secret');
+                    
+                    try {
+                        const response = await fetch(`/api/discogs/release/${skiva.id}?token=${token}&secret=${secret}`);
+                        const data = await response.json();
+                        
+                        if (data.tracklist && data.tracklist.length > 0) {
+                            let html = '<ul style="margin: 0; padding-left: 20px;">';
+                            data.tracklist.forEach(track => {
+                                html += `<li style="margin-bottom: 4px;"><strong>${track.position || '-'}</strong> ${track.title} <em style="color: #888;">${track.duration || ''}</em></li>`;
+                            });
+                            html += '</ul>';
+                            tracklistTd.innerHTML = html;
+                        } else {
+                            tracklistTd.innerHTML = '<span style="color: #888;">Ingen låtlista hittades.</span>';
+                        }
+                    } catch (e) {
+                        tracklistTd.innerHTML = '<span style="color: #ff4757;">Kunde inte hämta låtlista.</span>';
+                    }
+                }
+            }
         };
 
         item.appendChild(mainRow);
