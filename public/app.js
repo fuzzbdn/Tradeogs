@@ -139,6 +139,10 @@ function switchView(viewName) {
     if (viewName === 'collection' && window.myCollection.length === 0) {
         fetchCollection(1);
     }
+   // LÄGG TILL DETTA: Hämta annonser när vi byter till annonsvyn
+    else if (viewName === 'ads') {
+        fetchTraderaAds();
+    }
 }
 
 function logout() {
