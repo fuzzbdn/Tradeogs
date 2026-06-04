@@ -1,21 +1,19 @@
 const express = require('express');
 const router = express.Router();
 
-const TRADERA_APP_ID = process.env.TRADERA_APP_ID;
-const TRADERA_APP_KEY = process.env.TRADERA_APP_KEY; 
+// Tvätta nycklarna! .replace(/"/g, '') tar automatiskt bort alla citationstecken.
+const TRADERA_APP_ID = process.env.TRADERA_APP_ID ? process.env.TRADERA_APP_ID.replace(/"/g, '') : '';
+const TRADERA_APP_KEY = process.env.TRADERA_APP_KEY ? process.env.TRADERA_APP_KEY.replace(/"/g, '') : ''; 
 
 // --- STEG 1: SKICKA ANVÄNDAREN TILL TRADERA ---
 router.get('/login', (req, res) => {
-    // Traderas egna inloggningssida kräver AppId och AppKey (som de kallar pkey)
     const traderaAuthUrl = `https://api.tradera.com/token-login?appId=${TRADERA_APP_ID}&pkey=${TRADERA_APP_KEY}`;
     
     res.redirect(traderaAuthUrl);
 });
 
-
 // --- STEG 2: TRADERA SKICKAR TILLBAKA ANVÄNDAREN HIT ---
 router.get('/callback', (req, res) => {
-    // Tradera skickar tillbaka den färdiga nyckeln direkt i webbadressen!
     const { token, userId, exp } = req.query;
 
     if (!token) {
