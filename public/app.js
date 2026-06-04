@@ -35,6 +35,10 @@
 /* =========================================
    2. INITIALISERA GRÄNSSNITTET
    ========================================= */
+let currentPage = 1;
+let isLoading = false;
+window.myCollection = []; 
+
 document.addEventListener("DOMContentLoaded", function() {
     const discogsToken = localStorage.getItem('discogs_token');
     const discogsBtn = document.querySelector('.btn-discogs');
@@ -60,10 +64,11 @@ document.addEventListener("DOMContentLoaded", function() {
         setChecked('set-katalog', settings.katalog);
         setChecked('set-url', settings.url);
         setChecked('set-price', settings.price);
+    }
 
-        if (document.getElementById('set-limit')) {
-            document.getElementById('set-limit').value = settings.limit || '100';
-        }
+    // Starta på samlingen direkt om vi är på dashboard
+    if (window.location.pathname.includes('dashboard.html')) {
+        switchView('collection');
     }
 });
 
@@ -130,6 +135,10 @@ function switchView(viewName) {
     document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
     document.getElementById('view-' + viewName)?.classList.add('active');
     document.getElementById('nav-' + viewName)?.classList.add('active');
+
+    if (viewName === 'collection' && window.myCollection.length === 0) {
+        fetchCollection(1);
+    }
 }
 
 function logout() {
@@ -149,8 +158,7 @@ function saveDisplaySettings() {
         tracklist: document.getElementById('set-tracklist').checked,
         katalog: document.getElementById('set-katalog').checked,
         url: document.getElementById('set-url').checked,
-        price: document.getElementById('set-price').checked,
-        limit: document.getElementById('set-limit').value
+        price: document.getElementById('set-price').checked
     };
     localStorage.setItem('tradeogs_display', JSON.stringify(settings));
     
@@ -159,49 +167,84 @@ function saveDisplaySettings() {
     btn.innerText = "✅ Sparat!"; btn.style.backgroundColor = "#51cf66"; btn.style.color = "white";
     setTimeout(() => { btn.innerText = oldText; btn.style.backgroundColor = "transparent"; btn.style.color = "#555"; }, 2000);
 
-    if (window.myCollection && window.myCollection.length > 0) renderCollection(window.myCollection);
+    if (window.myCollection && window.myCollection.length > 0) renderCollection(window.myCollection, false);
 }
 
 /* =========================================
    5. DISCOGS - HÄMTA & RITA UT SAMLING
    ========================================= */
-window.myCollection = []; 
+async function fetchCollection(page = 1) {
+    if (isLoading) return;
+    isLoading = true;
 
-async function fetchCollection() {
     const token = localStorage.getItem('discogs_token');
     const secret = localStorage.getItem('discogs_secret');
     const statusDiv = document.getElementById('collection-status');
+    const loadMoreBtn = document.getElementById('load-more-btn');
 
     if (!token || !secret) {
-        statusDiv.innerHTML = '<p style="color: #ff4757; font-weight: bold;">❌ Du måste koppla ditt Discogs-konto under Inställningar först!</p>';
+        statusDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; background: #fff; border-radius: 8px; border: 1px dashed #ccc;">
+                <p style="color: #666; font-size: 16px; margin-bottom: 20px;">Du har inte kopplat ditt Discogs-konto ännu.</p>
+                <button class="btn btn-discogs" onclick="switchView('settings')">Gå till inställningar för att koppla</button>
+            </div>`;
+        if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+        isLoading = false;
         return;
     }
 
-    statusDiv.innerHTML = '<p style="color: #666;">Hämtar samling från Discogs... ⏳</p>';
-    document.getElementById('collection-list').innerHTML = '';
-
-    const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || {};
-    const limit = settings.limit || '100';
+    if (page === 1) {
+        statusDiv.innerHTML = '<p style="color: #666;">Hämtar samling från Discogs... ⏳</p>';
+        document.getElementById('collection-list').innerHTML = '';
+        window.myCollection = [];
+    } else {
+        if (loadMoreBtn) loadMoreBtn.innerText = 'Laddar... ⏳';
+    }
 
     try {
-        const response = await fetch(`/api/discogs/collection?token=${token}&secret=${secret}&limit=${limit}`);
+        const response = await fetch(`/api/discogs/collection?token=${token}&secret=${secret}&limit=25&page=${page}`);
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Något gick fel.');
+        
+        if (response.status === 401) {
+            statusDiv.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; background: #fff; border-radius: 8px; border: 1px dashed #ccc;">
+                    <p style="color: #666; font-size: 16px; margin-bottom: 20px;">Din koppling till Discogs är ogiltig eller har löpt ut.</p>
+                    <button class="btn btn-discogs" onclick="switchView('settings')">Gå till inställningar för att koppla igen</button>
+                </div>`;
+            isLoading = false;
+            return;
+        }
 
-        window.myCollection = data.skivor; 
+        if (!response.ok) throw new Error(data.error || 'Något gick fel vid hämtningen.');
+
+        window.myCollection = window.myCollection.concat(data.skivor); 
+        currentPage = page;
 
         statusDiv.innerHTML = `
-            <p style="color: #51cf66; font-weight: bold;">
+            <p style="color: #51cf66; font-weight: bold; margin-bottom: 15px;">
                 ✅ Hittade användare: ${data.username} <br>
-                Visar ${data.skivor.length} av totalt ${data.totalt_i_samlingen} sparade skivor.
+                Visar ${window.myCollection.length} av totalt ${data.totalt_i_samlingen} skivor.
             </p>`;
         
         document.getElementById('search-container').style.display = 'block';
-        renderCollection(window.myCollection);
+        
+        // Rita ut de nya skivorna i listan
+        renderCollection(data.skivor, page > 1);
+
+        // Hantera knappen för sidnumrering
+        if (data.pagination && data.pagination.pages > page) {
+            loadMoreBtn.style.display = 'block';
+            loadMoreBtn.innerText = 'Ladda nästa 25 skivor';
+        } else {
+            loadMoreBtn.style.display = 'none';
+        }
 
     } catch (error) {
         statusDiv.innerHTML = `<p style="color: #ff4757; font-weight: bold;">Fel: ${error.message}</p>`;
+        if (loadMoreBtn && page > 1) loadMoreBtn.innerText = 'Ladda nästa 25 skivor';
     }
+    
+    isLoading = false;
 }
 
 function filterCollection() {
@@ -209,19 +252,30 @@ function filterCollection() {
     const filteredList = window.myCollection.filter(skiva => {
         return skiva.artist.toLowerCase().includes(query) || skiva.titel.toLowerCase().includes(query);
     });
-    renderCollection(filteredList);
+    
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    if (loadMoreBtn) {
+        // Göm ladda fler-knappen medans man söker för att inte strula till det
+        loadMoreBtn.style.display = query.length > 0 ? 'none' : 'block';
+    }
+    
+    renderCollection(filteredList, false);
 }
 
-function renderCollection(skivor) {
+function renderCollection(skivor, append = false) {
     const listDiv = document.getElementById('collection-list');
-    listDiv.innerHTML = ''; 
+    
+    // Töm listan om vi inte gör en "append" (lägger till i slutet)
+    if (!append) {
+        listDiv.innerHTML = ''; 
+    }
 
     const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || { 
         bild: true, format: true, ar: true, bolag: false, genre: true, 
         tracklist: true, katalog: true, url: true, price: true 
     };
 
-    if (skivor.length === 0) {
+    if (skivor.length === 0 && !append) {
         listDiv.innerHTML = '<p style="color: #888;">Inga skivor hittades.</p>';
         return;
     }
@@ -269,7 +323,6 @@ function renderCollection(skivor) {
         
         const storBild = skiva.bild ? `<img src="${skiva.bild}" style="width: 120px; height: 120px; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-right: 20px; object-fit: cover;">` : '';
 
-        // HÄR ÄR UPPDELNINGEN AV FORMAT, ÅR OCH BOLAG
         let tabellRader = `
             <tr style="border-bottom: 1px solid #e1e4e8;">
                 <th style="padding: 8px 0; color: #666; font-weight: normal; width: 140px;">Format:</th>
