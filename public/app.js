@@ -59,7 +59,6 @@ document.addEventListener("DOMContentLoaded", function() {
         setChecked('set-tracklist', settings.tracklist);
         setChecked('set-katalog', settings.katalog);
         setChecked('set-url', settings.url);
-        setChecked('set-matrix', settings.matrix);
         setChecked('set-price', settings.price);
 
         if (document.getElementById('set-limit')) {
@@ -150,7 +149,6 @@ function saveDisplaySettings() {
         tracklist: document.getElementById('set-tracklist').checked,
         katalog: document.getElementById('set-katalog').checked,
         url: document.getElementById('set-url').checked,
-        matrix: document.getElementById('set-matrix').checked,
         price: document.getElementById('set-price').checked,
         limit: document.getElementById('set-limit').value
     };
@@ -220,7 +218,7 @@ function renderCollection(skivor) {
 
     const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || { 
         bild: true, format: true, ar: true, bolag: false, genre: true, 
-        tracklist: true, katalog: true, url: true, matrix: false, price: true 
+        tracklist: true, katalog: true, url: true, price: true 
     };
 
     if (skivor.length === 0) {
@@ -271,7 +269,6 @@ function renderCollection(skivor) {
         
         const storBild = skiva.bild ? `<img src="${skiva.bild}" style="width: 120px; height: 120px; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-right: 20px; object-fit: cover;">` : '';
 
-        // Tog bort Discogs ID från tabellen och satte 140px bredd på Format-raden istället
         let tabellRader = `
             <tr style="border-bottom: 1px solid #e1e4e8;">
                 <th style="padding: 8px 0; color: #666; font-weight: normal; width: 140px;">Format:</th>
@@ -299,47 +296,40 @@ function renderCollection(skivor) {
             </tr>`;
         }
         
-        if (settings.tracklist) {
-            tabellRader += `
-            <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal; vertical-align: top;">Låtlista:</th>
-                <td style="padding: 8px 0; font-weight: normal; color: #666;" id="tracklist-${skiva.id}">
-                    <span style="font-style: italic;">Laddar låtlista... ⏳</span>
-                </td>
-            </tr>`;
-        }
-
-        // Länken bryts automatiskt vid behov så den inte spräcker layouten
         if (settings.url) {
             tabellRader += `
             <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal;">Discogslänk:</th>
+                <th style="padding: 8px 0; color: #666; font-weight: normal; vertical-align: top;">Länk:</th>
                 <td style="padding: 8px 0;">
                     <a href="${skiva.discogs_url}" target="_blank" style="color: #4285F4; text-decoration: none; word-break: break-all;">${skiva.discogs_url}</a>
                 </td>
             </tr>`;
         }
 
-        if (settings.matrix) {
-            tabellRader += `
-            <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal;">Streckkod/Matrix:</th>
-                <td style="padding: 8px 0; font-weight: normal; color: #666; font-style: italic;">Hämtas när du skapar annons...</td>
-            </tr>`;
-        }
-
         if (settings.price) {
             tabellRader += `
             <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal;">Prisvärdering:</th>
-                <td style="padding: 8px 0; font-weight: normal; color: #666; font-style: italic;">Beräknas när du skapar annons...</td>
+                <th style="padding: 8px 0; color: #666; font-weight: normal; vertical-align: top;">Marknadsvärde:</th>
+                <td style="padding: 8px 0; font-weight: normal; color: #666;" id="price-${skiva.id}">
+                    <span style="font-style: italic;">Laddar värdering... ⏳</span>
+                </td>
+            </tr>`;
+        }
+
+        if (settings.tracklist) {
+            tabellRader += `
+            <tr>
+                <th style="padding: 12px 0 8px 0; color: #666; font-weight: normal; vertical-align: top;">Låtlista:</th>
+                <td style="padding: 12px 0 8px 0; font-weight: normal; color: #666;" id="tracklist-${skiva.id}">
+                    <span style="font-style: italic;">Laddar låtlista... ⏳</span>
+                </td>
             </tr>`;
         }
 
         detailsRow.innerHTML = `
             <div style="display: flex; align-items: flex-start;">
                 ${storBild}
-                <div style="flex-grow: 1;">
+                <div style="flex-grow: 1; min-width: 0;">
                     <h4 style="margin: 0 0 15px 0; color: #333; font-size: 16px;">Detaljerad Information</h4>
                     <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
                         ${tabellRader}
@@ -355,10 +345,14 @@ function renderCollection(skivor) {
             arrowSpan.innerText = isHidden ? '▲ Stäng' : '▼ Info';
             arrowSpan.style.color = isHidden ? '#333' : '#aaa';
 
-            if (isHidden && settings.tracklist) {
+            if (isHidden && (settings.tracklist || settings.price)) {
                 const tracklistTd = document.getElementById(`tracklist-${skiva.id}`);
+                const priceTd = document.getElementById(`price-${skiva.id}`);
                 
-                if (tracklistTd && tracklistTd.innerText.includes('Laddar')) {
+                const needsTracklist = tracklistTd && tracklistTd.innerText.includes('Laddar');
+                const needsPrice = priceTd && priceTd.innerText.includes('Laddar');
+
+                if (needsTracklist || needsPrice) {
                     const token = localStorage.getItem('discogs_token');
                     const secret = localStorage.getItem('discogs_secret');
                     
@@ -366,18 +360,42 @@ function renderCollection(skivor) {
                         const response = await fetch(`/api/discogs/release/${skiva.id}?token=${token}&secret=${secret}`);
                         const data = await response.json();
                         
-                        if (data.tracklist && data.tracklist.length > 0) {
-                            let html = '<ul style="margin: 0; padding-left: 20px;">';
-                            data.tracklist.forEach(track => {
-                                html += `<li style="margin-bottom: 4px;"><strong>${track.position || '-'}</strong> ${track.title} <em style="color: #888;">${track.duration || ''}</em></li>`;
-                            });
-                            html += '</ul>';
-                            tracklistTd.innerHTML = html;
-                        } else {
-                            tracklistTd.innerHTML = '<span style="color: #888;">Ingen låtlista hittades.</span>';
+                        if (needsTracklist) {
+                            if (data.tracklist && data.tracklist.length > 0) {
+                                let html = '<ul style="margin: 0; padding-left: 20px;">';
+                                data.tracklist.forEach(track => {
+                                    html += `<li style="margin-bottom: 4px;"><strong>${track.position || '-'}</strong> ${track.title} <em style="color: #888;">${track.duration || ''}</em></li>`;
+                                });
+                                html += '</ul>';
+                                tracklistTd.innerHTML = html;
+                            } else {
+                                tracklistTd.innerHTML = '<span style="color: #888;">Ingen låtlista hittades.</span>';
+                            }
+                        }
+
+                        if (needsPrice) {
+                            if (data.prices && Object.keys(data.prices).length > 0) {
+                                const p = data.prices;
+                                const formatPrice = (condition) => {
+                                    return p[condition] ? `<strong>${parseFloat(p[condition].value).toFixed(2)} ${p[condition].currency}</strong>` : '-';
+                                };
+                                
+                                let priceHtml = `
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; font-size: 13px;">
+                                        <div style="background: #e8f0fe; padding: 6px 10px; border-radius: 4px; color: #1a73e8;">M/NM: <br>${formatPrice('Near Mint (NM or M-)')}</div>
+                                        <div style="background: #e8f0fe; padding: 6px 10px; border-radius: 4px; color: #1a73e8;">VG+: <br>${formatPrice('Very Good Plus (VG+)')}</div>
+                                        <div style="background: #e8f0fe; padding: 6px 10px; border-radius: 4px; color: #1a73e8;">VG: <br>${formatPrice('Very Good (VG)')}</div>
+                                        <div style="background: #e8f0fe; padding: 6px 10px; border-radius: 4px; color: #1a73e8;">G+: <br>${formatPrice('Good Plus (G+)')}</div>
+                                    </div>
+                                `;
+                                priceTd.innerHTML = priceHtml;
+                            } else {
+                                priceTd.innerHTML = '<span style="color: #888;">Ingen försäljningshistorik hittades.</span>';
+                            }
                         }
                     } catch (e) {
-                        tracklistTd.innerHTML = '<span style="color: #ff4757;">Kunde inte hämta låtlista.</span>';
+                        if (needsTracklist) tracklistTd.innerHTML = '<span style="color: #ff4757;">Kunde inte hämta låtlista.</span>';
+                        if (needsPrice) priceTd.innerHTML = '<span style="color: #ff4757;">Kunde inte hämta prisvärdering.</span>';
                     }
                 }
             }
