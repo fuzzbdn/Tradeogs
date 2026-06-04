@@ -183,5 +183,30 @@ router.get('/discogs/callback', async (req, res) => {
         res.status(500).send('Misslyckades att hämta de slutgiltiga nycklarna från Discogs.');
     }
 });
+// ==========================================
+// 3. KONTROLLERA ANSLUTNINGAR (Dashboard status)
+// ==========================================
+router.get('/connections', async (req, res) => {
+    const { user_id } = req.query;
+    if (!user_id) return res.status(400).json({ error: 'Saknar user_id' });
 
+    try {
+        const { data, error } = await supabase
+            .from('plattform_tokens')
+            .select('plattform')
+            .eq('user_id', user_id);
+
+        if (error) throw error;
+
+        // Kollar om det finns rader för respektive plattform
+        const connections = {
+            discogs: data.some(d => d.plattform === 'discogs'),
+            tradera: data.some(d => d.plattform === 'tradera')
+        };
+        
+        res.json(connections);
+    } catch (error) {
+        res.status(500).json({ error: 'Kunde inte kolla anslutningar' });
+    }
+});
 module.exports = router;
