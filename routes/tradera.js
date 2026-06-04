@@ -71,9 +71,10 @@ router.get('/active-ads', async (req, res) => {
     if (!user_id) return res.status(401).json({ error: 'Saknar användar-ID.' });
 
     try {
+        // Vi måste hämta BÅDE access_token och token_secret, eftersom Tradera V4 kräver båda
         const { data: tokenRecord, error: dbError } = await supabase
             .from('plattform_tokens')
-            .select('access_token')
+            .select('access_token, token_secret')
             .eq('user_id', user_id)
             .eq('plattform', 'tradera')
             .single();
@@ -83,40 +84,50 @@ router.get('/active-ads', async (req, res) => {
         }
 
         const userToken = tokenRecord.access_token;
-        const traderaUrl = 'https://api.tradera.com/v3/public/items/active'; 
+        const traderaUserId = tokenRecord.token_secret; // Detta är ditt unika ID hos Tradera
+
+        // Den officiella V4-adressen hos Tradera
+        const traderaUrl = 'https://api.tradera.com/v4/listings/seller-items'; 
         
+        // Tradera V4 kräver specifika X-headers istället för vanliga Bearer tokens
         const response = await axios.get(traderaUrl, {
             headers: {
-                'Authorization': `Bearer ${userToken}`,
-                'AppId': TRADERA_APP_ID,
-                'AppKey': TRADERA_APP_KEY,
+                'X-App-Id': TRADERA_APP_ID,
+                'X-App-Key': TRADERA_APP_KEY,
+                'X-User-Id': traderaUserId,
+                'X-User-Token': userToken,
                 'Accept': 'application/json'
             }
         });
 
-        const activeAds = response.data.items.map(ad => ({
-            id: ad.itemId,
-            rubrik: ad.shortDescription,
-            pris: ad.price,
-            valuta: ad.currency,
-            bud: ad.totalBids,
+        // Beroende på om Tradera lägger det direkt i en array eller under "items"
+        const items = response.data.items || response.data || [];
+
+        // Översätt Traderas data till appens format
+        const activeAds = items.map(ad => ({
+            id: ad.itemId || ad.id,
+            rubrik: ad.shortDescription || ad.title || 'Okänd titel',
+            pris: ad.price || ad.buyItNowPrice || ad.currentBid || 0,
+            valuta: ad.currency || 'SEK',
+            bud: ad.totalBids || ad.bidCount || 0,
             slutdatum: ad.endDate,
-            bild_url: ad.imageUrl
+            bild_url: ad.imageUrl || (ad.images && ad.images.length > 0 ? ad.images[0].url : '')
         }));
 
         res.json({ success: true, totalt_annonser: activeAds.length, annonser: activeAds });
 
-} catch (error) {
-        // Vi hämtar statuskod, url och data för att se exakt vad som avvisas
+    } catch (error) {
+        // Behåller skvallerkoden ifall något mer strular
         const status = error.response ? error.response.status : 'Okänd';
         const url = error.config ? error.config.url : 'Okänd URL';
         const data = error.response && error.response.data ? JSON.stringify(error.response.data) : 'Tomt svar';
         
         console.error('Tradera detaljer:', { status, url, data });
-        
         res.status(500).json({ error: `Tradera vägrade svara! Statuskod: ${status}. URL: ${url}. Data: ${data}` });
     }
 });
 
+// MÅSTE LIGGA LÄNGST NER!
+module.exports = router;
 // MÅSTE LIGGA LÄNGST NER!
 module.exports = router;
