@@ -5,6 +5,7 @@
     const isDashboard = window.location.pathname.includes('dashboard.html');
     let session = localStorage.getItem('supabase_session');
 
+    // Hantera eventuella Supabase-tokens i URL-hashen (t.ex. vid Google-inloggning)
     if (isDashboard && window.location.hash) {
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
@@ -18,18 +19,12 @@
             session = JSON.stringify(oauthSession);
             history.replaceState(null, null, window.location.pathname);
         }
-
-        const discogsToken = params.get('discogs_token');
-        const discogsSecret = params.get('discogs_secret');
-        
-        if (discogsToken && discogsSecret) {
-            localStorage.setItem('discogs_token', discogsToken);
-            localStorage.setItem('discogs_secret', discogsSecret);
-            history.replaceState(null, null, window.location.pathname);
-        }
     }
 
-    if (isDashboard && !session) window.location.href = '/index.html';
+    // Om vi är på dashboarden men saknar session, skicka tillbaka till login
+    if (isDashboard && !session) {
+        window.location.href = '/index.html';
+    }
 })();
 
 /* =========================================
@@ -40,16 +35,23 @@ let isLoading = false;
 window.myCollection = []; 
 
 document.addEventListener("DOMContentLoaded", function() {
-    const discogsToken = localStorage.getItem('discogs_token');
-    const discogsBtn = document.querySelector('.btn-discogs');
+    const sessionStr = localStorage.getItem('supabase_session');
+    if (!sessionStr) return;
     
-    if (discogsToken && discogsBtn) {
-        discogsBtn.innerText = "✅ Discogs är kopplat";
-        discogsBtn.style.backgroundColor = "#51cf66";
-        discogsBtn.style.borderColor = "#51cf66";
-        discogsBtn.style.pointerEvents = "none";
-    }
+    const session = JSON.parse(sessionStr);
+    const userId = session.user?.id;
 
+    // 1. Sätt upp OAuth-länkarna dynamiskt med användarens ID på servern
+    const discogsLoginBtn = document.querySelector('.btn-discogs');
+    const traderaLoginBtn = document.querySelector('.btn-tradera');
+    
+    if (discogsLoginBtn) discogsLoginBtn.href = `/api/auth/discogs/login?user_id=${userId}`;
+    if (traderaLoginBtn) traderaLoginBtn.href = `/api/tradera/login?user_id=${userId}`;
+
+    // 2. Kontrollera direkt vilka externa konton som är kopplade i databasen
+    checkPlatformConnections(userId);
+
+    // 3. Ladda sparade visningsalternativ från localStorage
     const savedSettings = localStorage.getItem('tradeogs_display');
     if (savedSettings) {
         const settings = JSON.parse(savedSettings);
@@ -66,11 +68,42 @@ document.addEventListener("DOMContentLoaded", function() {
         setChecked('set-price', settings.price);
     }
 
-    // Starta på samlingen direkt om vi är på dashboard
+    // 4. Starta på samlingen direkt om vi är på dashboarden
     if (window.location.pathname.includes('dashboard.html')) {
         switchView('collection');
     }
 });
+
+// Ny funktion för att kontrollera anslutningsstatus via servern (istället för localStorage)
+async function checkPlatformConnections(userId) {
+    if (!userId) return;
+
+    try {
+        // Vi skapar en endpoint på servern som svarar vilka plattformar som har sparade tokens
+        const response = await fetch(`/api/auth/connections?user_id=${userId}`);
+        if (!response.ok) return;
+        
+        const connections = await response.json(); // T.ex. { discogs: true, tradera: false }
+        
+        const discogsBtn = document.querySelector('.btn-discogs');
+        if (connections.discogs && discogsBtn) {
+            discogsBtn.innerText = "✅ Discogs är kopplat";
+            discogsBtn.style.backgroundColor = "#51cf66";
+            discogsBtn.style.borderColor = "#51cf66";
+            discogsBtn.style.pointerEvents = "none";
+        }
+
+        const traderaBtn = document.querySelector('.btn-tradera');
+        if (connections.tradera && traderaBtn) {
+            traderaBtn.innerText = "✅ Tradera är kopplat";
+            traderaBtn.style.backgroundColor = "#51cf66";
+            traderaBtn.style.borderColor = "#51cf66";
+            traderaBtn.style.pointerEvents = "none";
+        }
+    } catch (error) {
+        console.error("Kunde inte hämta anslutningsstatus:", error);
+    }
+}
 
 /* =========================================
    3. INLOGGNING OCH REGISTRERING
@@ -136,19 +169,19 @@ function switchView(viewName) {
     document.getElementById('view-' + viewName)?.classList.add('active');
     document.getElementById('nav-' + viewName)?.classList.add('active');
 
+    const session = JSON.parse(localStorage.getItem('supabase_session'));
+
     if (viewName === 'collection' && window.myCollection.length === 0) {
         fetchCollection(1);
-    }
-   // LÄGG TILL DETTA: Hämta annonser när vi byter till annonsvyn
-    else if (viewName === 'ads') {
+    } else if (viewName === 'ads') {
         fetchTraderaAds();
+    } else if (viewName === 'settings' && session) {
+        checkPlatformConnections(session.user.id);
     }
 }
 
 function logout() {
     localStorage.removeItem('supabase_session');
-    localStorage.removeItem('discogs_token');
-    localStorage.removeItem('discogs_secret');
     window.location.href = '/index.html';
 }
 
@@ -180,16 +213,11 @@ function saveDisplaySettings() {
 let searchTimeout = null;
 
 async function startSync() {
-    const token = localStorage.getItem('discogs_token');
-    const secret = localStorage.getItem('discogs_secret');
     const session = JSON.parse(localStorage.getItem('supabase_session'));
     const statusDiv = document.getElementById('collection-status');
     const syncBtn = document.getElementById('sync-btn');
 
-    if (!token || !secret) {
-        alert("Du måste koppla Discogs i inställningarna först!");
-        return;
-    }
+    if (!session) return;
 
     syncBtn.disabled = true;
     syncBtn.innerText = "⏳ Synkar...";
@@ -203,11 +231,12 @@ async function startSync() {
         try {
             statusDiv.innerHTML = `<p style="color: #4285F4;">Laddar ner sida ${currentPageToSync} av ${totalPages}... Vänligen stäng inte sidan.</p>`;
             
+            // Servern hämtar nu Discogs-nycklar inifrån databasen med hjälp av user_id
             const response = await fetch('/api/discogs/sync-page', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    token, secret, user_id: session.user.id, page: currentPageToSync
+                    user_id: session.user.id, page: currentPageToSync
                 })
             });
 
@@ -347,10 +376,8 @@ function renderCollection(skivor, append = false) {
         const mainRow = document.createElement('div');
         mainRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; cursor: pointer; flex-wrap: wrap; gap: 10px;";
         
-        // HÄR ÄR UPPDATERINGEN:
-        // Vi behöver release_id för Discogs-API:et, men vi behöver instance_id för DOM-elementen!
         const releaseId = skiva.release_id;
-        const instanceId = skiva.instance_id || skiva.release_id; // Fallback till release_id om datan råkar vara gammal
+        const instanceId = skiva.instance_id || skiva.release_id;
 
         mainRow.innerHTML = `
             <div style="display: flex; align-items: center; flex-grow: 1; min-width: 0; padding-right: 15px;">
@@ -453,7 +480,6 @@ function renderCollection(skivor, append = false) {
             arrowSpan.style.color = isHidden ? '#333' : '#aaa';
 
             if (isHidden && (settings.tracklist || settings.price)) {
-                // Hämta DOM-elementen med instanceId!
                 const tracklistTd = document.getElementById(`tracklist-${instanceId}`);
                 const priceTd = document.getElementById(`price-${instanceId}`);
                 
@@ -461,12 +487,11 @@ function renderCollection(skivor, append = false) {
                 const needsPrice = priceTd && priceTd.innerText.includes('Laddar');
 
                 if (needsTracklist || needsPrice) {
-                    const token = localStorage.getItem('discogs_token');
-                    const secret = localStorage.getItem('discogs_secret');
+                    const session = JSON.parse(localStorage.getItem('supabase_session'));
                     
                     try {
-                        // Men hämta från Discogs API med releaseId!
-                        const response = await fetch(`/api/discogs/release/${releaseId}?token=${token}&secret=${secret}`);
+                        // Skicka med user_id istället för tokens – servern löser resten mot databasen
+                        const response = await fetch(`/api/discogs/release/${releaseId}?user_id=${session.user.id}`);
                         const data = await response.json();
                         
                         if (needsTracklist) {
@@ -515,33 +540,23 @@ function renderCollection(skivor, append = false) {
         listDiv.appendChild(item);
     });
 }
+
 /* =========================================
    6. TRADERA - HÄMTA OCH RITA UT ANNONSER
    ========================================= */
 async function fetchTraderaAds() {
     const listDiv = document.getElementById('tradera-ads-list');
     const statusDiv = document.getElementById('tradera-ads-status');
+    const session = JSON.parse(localStorage.getItem('supabase_session'));
     
-    if (!listDiv || !statusDiv) return;
+    if (!listDiv || !statusDiv || !session) return;
 
     statusDiv.innerHTML = '<p style="color: #666;">Hämtar annonser från Tradera... ⏳</p>';
     listDiv.innerHTML = '';
 
-    // Vi utgår från att du sparar Tradera-token i localStorage när inloggningen är klar
-    const traderaToken = localStorage.getItem('tradera_token'); 
-    
-    if (!traderaToken) {
-        statusDiv.innerHTML = '<p style="color: #ff4757;">Du måste koppla ditt Tradera-konto under Inställningar först för att hämta annonser.</p>';
-        return;
-    }
-
     try {
-        const response = await fetch('/api/tradera/active-ads', {
-            headers: {
-                'Authorization': `Bearer ${traderaToken}`
-            }
-        });
-        
+        // Anropa backend med enbart användarens ID
+        const response = await fetch(`/api/tradera/active-ads?user_id=${session.user.id}`);
         const data = await response.json();
 
         if (!response.ok) throw new Error(data.error || 'Något gick fel mot Tradera.');
@@ -571,16 +586,15 @@ function renderTraderaAds(annonser) {
             ? `<img src="${ad.bild_url}" alt="Annonsbild" style="width: 60px; height: 60px; border-radius: 4px; margin-right: 15px; object-fit: cover; border: 1px solid #ccc;">`
             : `<div style="width: 60px; height: 60px; background: #e1e4e8; border-radius: 4px; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px;">📦</div>`;
 
-        // Formatera slutdatum snyggt till svenskt format
         const slutdatum = new Date(ad.slutdatum).toLocaleString('sv-SE', { 
             year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' 
         });
 
         item.innerHTML = `
-            <div style="display: flex; align-items: center; flex-grow: 1;">
+            <div style="display: flex; align-items: center; flex-grow: 1; min-width: 0;">
                 ${bildHtml}
-                <div>
-                    <strong style="display: block; font-size: 16px; color: #222; margin-bottom: 4px;">${ad.rubrik}</strong>
+                <div style="min-width: 0; padding-right: 10px;">
+                    <strong style="display: block; font-size: 16px; color: #222; margin-bottom: 4px; word-break: break-word;">${ad.rubrik}</strong>
                     <span style="font-size: 13px; color: #888;">Avslutas: ${slutdatum}</span>
                 </div>
             </div>
