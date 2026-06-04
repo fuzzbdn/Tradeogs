@@ -269,14 +269,19 @@ function renderCollection(skivor) {
         
         const storBild = skiva.bild ? `<img src="${skiva.bild}" style="width: 120px; height: 120px; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-right: 20px; object-fit: cover;">` : '';
 
+        // HÄR ÄR UPPDELNINGEN AV FORMAT, ÅR OCH BOLAG
         let tabellRader = `
             <tr style="border-bottom: 1px solid #e1e4e8;">
                 <th style="padding: 8px 0; color: #666; font-weight: normal; width: 140px;">Format:</th>
                 <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.format}</td>
             </tr>
             <tr style="border-bottom: 1px solid #e1e4e8;">
+                <th style="padding: 8px 0; color: #666; font-weight: normal;">Utgivningsår:</th>
+                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.ar || 'Okänt'}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e1e4e8;">
                 <th style="padding: 8px 0; color: #666; font-weight: normal;">Skivbolag:</th>
-                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.bolag} (${skiva.ar || 'Okänt'})</td>
+                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.bolag}</td>
             </tr>
         `;
 
