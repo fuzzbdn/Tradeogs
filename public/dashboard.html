@@ -18,27 +18,27 @@
 
     <div class="app-layout">
         <aside class="sidebar">
-            <a class="menu-item" id="nav-collection" onclick="switchView('collection')">Min Samling</a>
+            <a class="menu-item active" id="nav-collection" onclick="switchView('collection')">Min Samling</a>
             <a class="menu-item" id="nav-ads" onclick="switchView('ads')">Aktiva Annonser</a>
-            <a class="menu-item active" id="nav-settings" onclick="switchView('settings')">Inställningar & Kopplingar</a>
+            <a class="menu-item" id="nav-settings" onclick="switchView('settings')">Inställningar & Kopplingar</a>
         </aside>
 
         <main class="main-content">
             
-            <section id="view-collection" class="view-section">
+            <section id="view-collection" class="view-section active">
                 <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
                     <h2>Min Discogs-samling</h2>
                     
                     <div id="collection-status" style="margin-bottom: 20px;">
-                        <p>Klicka på knappen för att hämta dina skivor.</p>
-                        <button class="btn btn-primary" onclick="fetchCollection()" style="width: auto; padding: 10px 20px;">Ladda samling</button>
-                    </div>
+                        </div>
 
                     <div id="search-container" style="display: none; margin-bottom: 20px;">
-                        <input type="text" id="search-input" placeholder="Sök på artist eller titel..." onkeyup="filterCollection()" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc;">
+                        <input type="text" id="search-input" placeholder="Sök på artist eller titel bland inlästa skivor..." onkeyup="filterCollection()" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc;">
                     </div>
                     
                     <div id="collection-list" style="display: grid; gap: 15px;"></div>
+                    
+                    <button id="load-more-btn" class="btn btn-outline" onclick="fetchCollection(currentPage + 1)" style="display: none; margin-top: 20px; width: 100%;">Ladda nästa 25 skivor</button>
                 </div>
             </section>
 
@@ -49,7 +49,7 @@
                 </div>
             </section>
 
-            <section id="view-settings" class="view-section active">
+            <section id="view-settings" class="view-section">
                 <div class="card" style="max-width: 600px; margin: 0 auto; text-align: left;">
                     <h2>Koppla plattformar</h2>
                     <div style="margin: 20px 0;">
@@ -95,17 +95,6 @@
                         <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
                             <input type="checkbox" id="set-price" checked style="width: auto; margin-right: 10px;"> Prisvärdering
                         </label>
-                    </div>
-
-                    <div class="form-group" style="max-width: 300px; margin-bottom: 25px;">
-                        <label for="set-limit">Antal skivor att ladda (Max 500)</label>
-                        <select id="set-limit" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px;">
-                            <option value="25">25 skivor</option>
-                            <option value="50">50 skivor</option>
-                            <option value="100" selected>100 skivor</option>
-                            <option value="250">250 skivor</option>
-                            <option value="500">500 skivor</option>
-                        </select>
                     </div>
 
                     <button class="btn btn-outline" onclick="saveDisplaySettings()" style="width: auto;">Spara visningsval</button>
