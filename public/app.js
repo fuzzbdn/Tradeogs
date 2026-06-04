@@ -273,6 +273,7 @@ function filterCollection() {
 }
 
 // Funktionen som bygger upp HTML:en för skivorna baserat på dina inställningar
+// Funktionen som bygger upp HTML:en för skivorna baserat på dina inställningar
 function renderCollection(skivor) {
     const listDiv = document.getElementById('collection-list');
     listDiv.innerHTML = ''; // Töm den gamla listan
@@ -286,10 +287,11 @@ function renderCollection(skivor) {
     }
 
     skivor.forEach(skiva => {
+        // Huvudbehållaren för hela skivan (både minimerad och expanderad vy)
         const item = document.createElement('div');
-        item.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; border: 1px solid #e1e4e8; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.02);";
+        item.style.cssText = "border: 1px solid #e1e4e8; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.02); overflow: hidden; transition: all 0.2s;";
         
-        // Bygg bilden om inställningen är på
+        // 1. Bygg bilden för den kompakta vyn
         let bildHtml = '';
         if (settings.bild) {
             bildHtml = skiva.bild 
@@ -297,7 +299,7 @@ function renderCollection(skivor) {
                 : `<div style="width: 60px; height: 60px; background: #e1e4e8; border-radius: 4px; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px;">💿</div>`;
         }
 
-        // Bygg textraden för Format, År och Bolag dynamiskt
+        // 2. Bygg textraden för den kompakta vyn baserat på inställningar
         let infoArray = [];
         if (settings.format) infoArray.push(skiva.format);
         if (settings.ar) infoArray.push(skiva.ar || 'Okänt år');
@@ -307,17 +309,71 @@ function renderCollection(skivor) {
             ? `<span style="font-size: 13px; color: #666; display: block; margin-top: 4px;">${infoArray.join(' • ')}</span>`
             : '';
 
-        item.innerHTML = `
-            <div style="display: flex; align-items: center;">
+        // 3. Den synliga klickbara raden
+        const mainRow = document.createElement('div');
+        mainRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; cursor: pointer;";
+        
+        // Notera event.stopPropagation() på knappen så att klick på knappen inte öppnar/stänger raden
+        mainRow.innerHTML = `
+            <div style="display: flex; align-items: center; flex-grow: 1;">
                 ${bildHtml}
                 <div>
                     <strong style="display: block; font-size: 16px; color: #222;">${skiva.artist} - ${skiva.titel}</strong>
                     ${extraInfo}
                 </div>
             </div>
-            <button class="btn btn-tradera" onclick="alert('Skapar annons för ID: ${skiva.id}')" style="margin: 0; padding: 10px 15px; font-size: 14px; width: auto;">Sälj på Tradera</button>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="color: #aaa; font-size: 12px;">▼ Info</span>
+                <button class="btn btn-tradera" onclick="event.stopPropagation(); alert('Skapar annons för ID: ${skiva.id}')" style="margin: 0; padding: 8px 15px; font-size: 14px; width: auto;">Sälj på Tradera</button>
+            </div>
         `;
+
+        // 4. Den dolda, expanderade vyn med all information
+        const detailsRow = document.createElement('div');
+        detailsRow.style.cssText = "display: none; padding: 20px; border-top: 1px solid #eee; background-color: #fafafa;";
         
+        const storBild = skiva.bild ? `<img src="${skiva.bild}" style="width: 120px; height: 120px; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-right: 20px; object-fit: cover;">` : '';
+
+        detailsRow.innerHTML = `
+            <div style="display: flex; align-items: flex-start;">
+                ${storBild}
+                <div style="flex-grow: 1;">
+                    <h4 style="margin: 0 0 15px 0; color: #333; font-size: 16px;">Detaljerad Information</h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                        <tr style="border-bottom: 1px solid #e1e4e8;">
+                            <th style="padding: 8px 0; color: #666; font-weight: normal; width: 120px;">Discogs ID:</th>
+                            <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.id}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e1e4e8;">
+                            <th style="padding: 8px 0; color: #666; font-weight: normal;">Format:</th>
+                            <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.format}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e1e4e8;">
+                            <th style="padding: 8px 0; color: #666; font-weight: normal;">Utgivningsår:</th>
+                            <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.ar || 'Okänt'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e1e4e8;">
+                            <th style="padding: 8px 0; color: #666; font-weight: normal;">Skivbolag:</th>
+                            <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.bolag}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        // 5. Lägg till klick-logiken för att visa/dölja detaljerna
+        mainRow.onclick = function() {
+            const isHidden = detailsRow.style.display === 'none';
+            detailsRow.style.display = isHidden ? 'block' : 'none';
+            // Vänder på pilen visuellt
+            const arrowSpan = mainRow.querySelector('span');
+            arrowSpan.innerText = isHidden ? '▲ Stäng' : '▼ Info';
+            arrowSpan.style.color = isHidden ? '#333' : '#aaa';
+        };
+
+        // 6. Montera ihop allt och lägg till i listan
+        item.appendChild(mainRow);
+        item.appendChild(detailsRow);
         listDiv.appendChild(item);
     });
 }
