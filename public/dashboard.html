@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tradeogs - Dashboard</title>
+    <!-- Kopplar in din gemensamma CSS-fil -->
     <link rel="stylesheet" href="/style.css">
 
+    <!-- Säkerhetskontroll (Skickar tillbaka icke-inloggade) -->
     <script>
         (function() {
             let session = localStorage.getItem('supabase_session');
-
             if (window.location.hash) {
                 const hash = window.location.hash.substring(1);
                 const params = new URLSearchParams(hash);
@@ -23,34 +24,99 @@
                     history.replaceState(null, null, window.location.pathname);
                 }
             }
-
-            if (!session) {
-                window.location.href = '/index.html';
-            }
+            if (!session) { window.location.href = '/index.html'; }
         })();
     </script>
 </head>
 <body>
 
+    <!-- Övre menyraden -->
     <header>
         <div class="header-left">
             <img src="/tradeogs_logo.png" alt="Tradeogs Logo" class="dash-logo">
             <h1 class="header-title">Instrumentpanel</h1>
         </div>
-        
         <button class="logout-btn" onclick="logout()">Logga ut</button>
     </header>
 
-    <div class="container">
-        <div class="card">
-            <h2>Koppla dina plattformar</h2>
-            <p>Auktorisera Tradeogs att hämta dina skivor och lägga upp annonser.</p>
-            <a href="/api/auth/discogs/login" class="btn btn-discogs">Koppla Discogs</a>
-            <a href="/api/tradera/login" class="btn btn-tradera">Koppla Tradera</a>
-        </div>
+    <!-- Appens huvudlayout (Meny + Innehåll) -->
+    <div class="app-layout">
+        
+        <!-- SIDOMENYN -->
+        <aside class="sidebar">
+            <a class="menu-item" id="nav-collection" onclick="switchView('collection')">Min Samling</a>
+            <a class="menu-item" id="nav-ads" onclick="switchView('ads')">Aktiva Annonser</a>
+            <a class="menu-item active" id="nav-settings" onclick="switchView('settings')">Inställningar & Kopplingar</a>
+        </aside>
+
+        <!-- HUVUDINNEHÅLL -->
+        <main class="main-content">
+            
+            <!-- VY 1: MIN SAMLING -->
+            <section id="view-collection" class="view-section">
+                <div class="card" style="text-align: left;">
+                    <h2>Din Discogs-samling</h2>
+                    <p>Här kommer dina skivor att listas. Du behöver koppla ditt Discogs-konto under <b>Inställningar</b> för att hämta data.</p>
+                    <!-- Här bygger vi listan med skivor i nästa steg -->
+                </div>
+            </section>
+
+            <!-- VY 2: AKTIVA ANNONSER -->
+            <section id="view-ads" class="view-section">
+                <div class="card" style="text-align: left;">
+                    <h2>Aktiva annonser på Tradera</h2>
+                    <p>Här kommer du kunna se och hantera de annonser du har lagt upp från din samling.</p>
+                    <!-- Här listar vi Tradera-data i framtiden -->
+                </div>
+            </section>
+
+            <!-- VY 3: INSTÄLLNINGAR (Aktiv som standard) -->
+            <section id="view-settings" class="view-section active">
+                <div class="card" style="max-width: 600px; margin: 0 auto;">
+                    <h2>Koppla dina plattformar</h2>
+                    <p>Auktorisera Tradeogs att hämta dina skivor och lägga upp annonser.</p>
+                    
+                    <div style="margin: 30px 0;">
+                        <a href="/api/auth/discogs/login" class="btn btn-discogs">Koppla till Discogs</a>
+                        <a href="/api/tradera/login" class="btn btn-tradera">Koppla till Tradera</a>
+                    </div>
+                    
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                    
+                    <h2>Systeminställningar</h2>
+                    <div class="form-group" style="max-width: 300px; margin: 0 auto;">
+                        <label for="language">Språk</label>
+                        <select id="language" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px;">
+                            <option value="sv">Svenska</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+        </main>
     </div>
 
+    <!-- JavaScript för navigeringen -->
     <script>
+        function switchView(viewName) {
+            // 1. Dölj alla vy-sektioner
+            document.querySelectorAll('.view-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // 2. Avmarkera alla menyval i sidebar
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // 3. Visa den valda vyn
+            document.getElementById('view-' + viewName).classList.add('active');
+            
+            // 4. Markera det valda menyvalet
+            document.getElementById('nav-' + viewName).classList.add('active');
+        }
+
         function logout() {
             localStorage.removeItem('supabase_session');
             window.location.href = '/index.html';
