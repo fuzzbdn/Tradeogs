@@ -6,14 +6,19 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // Gör att vi kan ta emot JSON-data
+app.use(express.json());
 
-// En enkel test-rutt för att se att allt fungerar
+// Importera våra rutter
+const authRoutes = require('./routes/auth');
+
+// Säg åt servern att använda rutterna
+app.use('/api/auth', authRoutes);
+
+// Den vanliga välkomst-rutten
 app.get('/', (req, res) => {
     res.json({ message: 'Välkommen till Tradeogs API! Servern är live.' });
 });
 
-// Port för lokal utveckling
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
@@ -21,5 +26,4 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 
-// Måste exporteras för att Vercel ska kunna köra den som en serverless function
 module.exports = app;
