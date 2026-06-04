@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tradeogs</title>
+    
+    <!-- Länka till extern CSS -->
     <link rel="stylesheet" href="/style.css">
     
-    </head>
+    <!-- Länka till extern JavaScript -->
+    <script src="/app.js" defer></script>
+</head>
 <body>
 
     <div class="login-card">
@@ -33,66 +37,6 @@
         <div id="status-message" class="message"></div>
     </div>
 
-    <script>
-        async function registerUser() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-            const statusDiv = document.getElementById('status-message');
 
-            // Grundläggande validering
-            if (!email || !password || !confirmPassword) {
-                statusDiv.style.color = '#ff6b6b';
-                statusDiv.innerText = 'Vänligen fyll i alla fält.';
-                return;
-            }
-
-            if (password !== confirmPassword) {
-                statusDiv.style.color = '#ff6b6b';
-                statusDiv.innerText = 'Lösenorden matchar inte varandra.';
-                return;
-            }
-
-            if (password.length < 6) {
-                statusDiv.style.color = '#ff6b6b';
-                statusDiv.innerText = 'Lösenordet måste vara minst 6 tecken långt.';
-                return;
-            }
-
-            statusDiv.style.color = '#aaa';
-            statusDiv.innerText = 'Skapar konto...';
-
-            try {
-                const response = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.error || 'Något gick fel.');
-                }
-
-                // Om inloggning sker automatiskt efter registrering sparar vi sessionen
-                if (result.session) {
-                    localStorage.setItem('supabase_session', JSON.stringify(result.session));
-                }
-
-                statusDiv.style.color = '#51cf66';
-                statusDiv.innerText = 'Konto skapat! Skickar dig vidare...';
-                
-                // Vänta en sekund så användaren hinner läsa, skicka sedan till dashboard
-                setTimeout(() => {
-                    window.location.href = '/dashboard.html';
-                }, 1500);
-
-            } catch (error) {
-                statusDiv.style.color = '#ff6b6b';
-                statusDiv.innerText = error.message;
-            }
-        }
-    </script>
 </body>
 </html>
