@@ -45,12 +45,20 @@
                 </div>
             </section>
 
-            <section id="view-ads" class="view-section">
-                <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
-                    <h2>Aktiva annonser på Tradera</h2>
-                    <p>Här kommer du kunna se och hantera de annonser du har lagt upp från din samling.</p>
-                </div>
-            </section>
+<section id="view-ads" class="view-section">
+    <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
+            <h2 style="margin: 0; border: none; padding: 0;">Aktiva annonser på Tradera</h2>
+            <button class="btn btn-outline" onclick="fetchTraderaAds()" style="width: auto; margin: 0; padding: 8px 15px; font-size: 14px;">🔄 Uppdatera</button>
+        </div>
+        
+        <div id="tradera-ads-status" style="margin-bottom: 20px;">
+            <p style="color: #666;">Här visas de annonser du har lagt upp från din samling.</p>
+        </div>
+
+        <div id="tradera-ads-list" style="display: grid; gap: 15px;"></div>
+    </div>
+</section>
 
             <section id="view-settings" class="view-section">
                 <div class="card" style="max-width: 600px; margin: 0 auto; text-align: left;">
