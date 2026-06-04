@@ -45,7 +45,8 @@ router.post('/sync-page', async (req, res) => {
         // Omformatera datan så den passar vår Supabase-tabell
         const dbRecords = releases.map(item => ({
             user_id: user_id,
-            release_id: item.id,
+            instance_id: item.instance_id, // Unikt ID för det specifika fysiska exemplaret
+            release_id: item.id,           // ID för själva utgåvan (används fortfarande för pris/låtlista)
             artist: item.basic_information.artists[0].name,
             titel: item.basic_information.title,
             ar: item.basic_information.year ? item.basic_information.year.toString() : 'Okänt',
@@ -58,9 +59,9 @@ router.post('/sync-page', async (req, res) => {
             stil: item.basic_information.styles ? item.basic_information.styles.join(', ') : ''
         }));
 
-        // Upsert betyder "Sätt in ny, eller uppdatera om den redan finns"
+        // Upsert kollar nu på kombinationen av user_id och instance_id
         if (dbRecords.length > 0) {
-            const { error } = await supabase.from('skivor').upsert(dbRecords, { onConflict: 'user_id, release_id' });
+            const { error } = await supabase.from('skivor').upsert(dbRecords, { onConflict: 'user_id, instance_id' });
             if (error) throw error;
         }
 
@@ -69,7 +70,7 @@ router.post('/sync-page', async (req, res) => {
             pagination: collectionResponse.data.pagination
         });
 
-} catch (error) {
+    } catch (error) {
         console.error('Synk Fel:', error);
         
         // Hämta det specifika felmeddelandet (från antingen Supabase eller Discogs)
@@ -118,9 +119,8 @@ router.get('/collection', async (req, res) => {
     }
 });
 
-// RUTT 3: Hämta låtlista OCH prisvärdering från Discogs (Bibehålls som den var)
+// RUTT 3: Hämta låtlista OCH prisvärdering från Discogs
 router.get('/release/:id', async (req, res) => {
-    // ... [Samma kod som förut för /release/:id, rör inte denna] ...
     const { token, secret } = req.query;
     const releaseId = req.params.id;
 
