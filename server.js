@@ -1,12 +1,16 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path'); // LÄGG TILL DENNA
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// LÄGG TILL DENNA FÖR VERCEL (så den hittar index.html)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // 1. Importera alla dina rutter från routes-mappen
 const authRoutes = require('./routes/auth');
