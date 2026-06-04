@@ -143,11 +143,8 @@ router.get('/discogs/callback', async (req, res) => {
         const final_token = params.get('oauth_token');
         const final_secret = params.get('oauth_token_secret');
 
-        res.json({
-            message: 'Discogs-inloggningen lyckades!',
-            discogs_token: final_token,
-            discogs_secret: final_secret
-        });
+// Skicka tillbaka användaren till dashboarden och skicka med nycklarna dolt i URL-fragmentet
+        res.redirect(`/dashboard.html#discogs_token=${final_token}&discogs_secret=${final_secret}`);
 
     } catch (error) {
         console.error('Fel vid Access Token:', error.message);
