@@ -17,6 +17,9 @@ app.use('/api/auth', authRoutes);
 const discogsRoutes = require('./routes/discogs');
 app.use('/api/discogs', discogsRoutes);
 
+const traderaRoutes = require('./routes/tradera');
+app.use('/api/tradera', traderaRoutes);
+
 // Den vanliga välkomst-rutten
 app.get('/', (req, res) => {
     res.json({ message: 'Välkommen till Tradeogs API! Servern är live.' });
