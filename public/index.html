@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tradeogs</title>
+    <style>
+        /* Grundinställningar för att utnyttja hela skärmen */
+        * { box-sizing: border-box; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Sidhuvud */
+        header {
+            width: 100%;
+            background-color: #1e1e1e;
+            padding: 20px 0;
+            text-align: center;
+            border-bottom: 2px solid #333;
+        }
+        h1 { margin: 0; letter-spacing: 2px; }
+
+        /* Huvudbehållare som sträcker ut sig */
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            flex-grow: 1;
+        }
+
+        /* Sektioner för inloggning */
+        .card {
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .card h2 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
+
+        /* Knappar */
+        .btn {
+            display: inline-block;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn:hover { opacity: 0.9; transform: scale(1.02); }
+        .btn:active { transform: scale(0.98); }
+
+        .btn-google { background-color: #4285F4; }
+        .btn-discogs { background-color: #333333; border: 1px solid #555; }
+        .btn-tradera { background-color: #fbd914; color: #121212; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>TRADEOGS</h1>
+    </header>
+
+    <div class="container">
+        
+        <div class="card">
+            <h2>1. Logga in</h2>
+            <p>Skapa ett konto eller logga in för att spara dina kopplingar.</p>
+            <!-- Länken går direkt till den rutt vi skapade i auth.js -->
+            <a href="/api/auth/google" class="btn btn-google">Logga in med Google</a>
+        </div>
+        
+        <div class="card">
+            <h2>2. Koppla dina plattformar</h2>
+            <p>Auktorisera Tradeogs att hämta dina skivor och lägga upp annonser.</p>
+            <a href="/api/auth/discogs/login" class="btn btn-discogs">Koppla Discogs</a>
+            <a href="/api/tradera/login" class="btn btn-tradera">Koppla Tradera</a>
+        </div>
+
+    </div>
+
+</body>
+</html>
