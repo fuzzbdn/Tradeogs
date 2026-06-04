@@ -293,19 +293,21 @@ function renderCollection(skivor) {
             ? `<span style="font-size: 13px; color: #666; display: block; margin-top: 4px;">${infoArray.join(' • ')}</span>`
             : '';
 
-        const mainRow = document.createElement('div');
-        mainRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; cursor: pointer;";
+const mainRow = document.createElement('div');
+        // Lade till flex-wrap och gap ifall skärmen är väldigt smal (t.ex. mobil)
+        mainRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; cursor: pointer; flex-wrap: wrap; gap: 10px;";
         
         mainRow.innerHTML = `
-            <div style="display: flex; align-items: center; flex-grow: 1;">
+            <div style="display: flex; align-items: center; flex-grow: 1; min-width: 0; padding-right: 15px;">
                 ${bildHtml}
-                <div>
-                    <strong style="display: block; font-size: 16px; color: #222;">${skiva.artist} - ${skiva.titel}</strong>
+                <div style="min-width: 0;">
+                    <strong style="display: block; font-size: 16px; color: #222; word-break: break-word;">${skiva.artist} - ${skiva.titel}</strong>
                     ${extraInfo}
                 </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <span style="color: #aaa; font-size: 12px;">▼ Info</span>
+            
+            <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
+                <span style="color: #555; font-size: 13px; width: 65px; text-align: right; display: inline-block; font-weight: 600;">▼ Info</span>
                 <button class="btn btn-tradera" onclick="event.stopPropagation(); alert('Skapar annons för ID: ${skiva.id}')" style="margin: 0; padding: 8px 15px; font-size: 14px; width: auto;">Sälj på Tradera</button>
             </div>
         `;
