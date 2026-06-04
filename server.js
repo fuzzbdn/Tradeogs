@@ -14,6 +14,9 @@ const authRoutes = require('./routes/auth');
 // Säg åt servern att använda rutterna
 app.use('/api/auth', authRoutes);
 
+const discogsRoutes = require('./routes/discogs');
+app.use('/api/discogs', discogsRoutes);
+
 // Den vanliga välkomst-rutten
 app.get('/', (req, res) => {
     res.json({ message: 'Välkommen till Tradeogs API! Servern är live.' });
