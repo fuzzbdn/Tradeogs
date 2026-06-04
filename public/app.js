@@ -57,8 +57,8 @@ document.addEventListener("DOMContentLoaded", function() {
         setChecked('set-bolag', settings.bolag);
         setChecked('set-genre', settings.genre);
         setChecked('set-tracklist', settings.tracklist);
-        setChecked('set-katalog', settings.katalog); // NY
-        setChecked('set-url', settings.url); // NY
+        setChecked('set-katalog', settings.katalog);
+        setChecked('set-url', settings.url);
         setChecked('set-matrix', settings.matrix);
         setChecked('set-price', settings.price);
 
@@ -148,8 +148,8 @@ function saveDisplaySettings() {
         bolag: document.getElementById('set-bolag').checked,
         genre: document.getElementById('set-genre').checked,
         tracklist: document.getElementById('set-tracklist').checked,
-        katalog: document.getElementById('set-katalog').checked, // NY
-        url: document.getElementById('set-url').checked, // NY
+        katalog: document.getElementById('set-katalog').checked,
+        url: document.getElementById('set-url').checked,
         matrix: document.getElementById('set-matrix').checked,
         price: document.getElementById('set-price').checked,
         limit: document.getElementById('set-limit').value
@@ -218,7 +218,6 @@ function renderCollection(skivor) {
     const listDiv = document.getElementById('collection-list');
     listDiv.innerHTML = ''; 
 
-    // STANDARDINSTÄLLNINGAR OM INGET ÄR SPARAT
     const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || { 
         bild: true, format: true, ar: true, bolag: false, genre: true, 
         tracklist: true, katalog: true, url: true, matrix: false, price: true 
@@ -272,13 +271,10 @@ function renderCollection(skivor) {
         
         const storBild = skiva.bild ? `<img src="${skiva.bild}" style="width: 120px; height: 120px; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-right: 20px; object-fit: cover;">` : '';
 
+        // Tog bort Discogs ID från tabellen och satte 140px bredd på Format-raden istället
         let tabellRader = `
             <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal; width: 140px;">Discogs ID:</th>
-                <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.id}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e1e4e8;">
-                <th style="padding: 8px 0; color: #666; font-weight: normal;">Format:</th>
+                <th style="padding: 8px 0; color: #666; font-weight: normal; width: 140px;">Format:</th>
                 <td style="padding: 8px 0; font-weight: bold; color: #222;">${skiva.format}</td>
             </tr>
             <tr style="border-bottom: 1px solid #e1e4e8;">
@@ -313,13 +309,30 @@ function renderCollection(skivor) {
             </tr>`;
         }
 
+        // Länken bryts automatiskt vid behov så den inte spräcker layouten
         if (settings.url) {
             tabellRader += `
             <tr style="border-bottom: 1px solid #e1e4e8;">
                 <th style="padding: 8px 0; color: #666; font-weight: normal;">Discogslänk:</th>
                 <td style="padding: 8px 0;">
-                    <a href="${skiva.discogs_url}" target="_blank" style="color: #4285F4; text-decoration: none; font-weight: bold;">Öppna på Discogs ↗</a>
+                    <a href="${skiva.discogs_url}" target="_blank" style="color: #4285F4; text-decoration: none; word-break: break-all;">${skiva.discogs_url}</a>
                 </td>
+            </tr>`;
+        }
+
+        if (settings.matrix) {
+            tabellRader += `
+            <tr style="border-bottom: 1px solid #e1e4e8;">
+                <th style="padding: 8px 0; color: #666; font-weight: normal;">Streckkod/Matrix:</th>
+                <td style="padding: 8px 0; font-weight: normal; color: #666; font-style: italic;">Hämtas när du skapar annons...</td>
+            </tr>`;
+        }
+
+        if (settings.price) {
+            tabellRader += `
+            <tr style="border-bottom: 1px solid #e1e4e8;">
+                <th style="padding: 8px 0; color: #666; font-weight: normal;">Prisvärdering:</th>
+                <td style="padding: 8px 0; font-weight: normal; color: #666; font-style: italic;">Beräknas när du skapar annons...</td>
             </tr>`;
         }
 
@@ -342,11 +355,9 @@ function renderCollection(skivor) {
             arrowSpan.innerText = isHidden ? '▲ Stäng' : '▼ Info';
             arrowSpan.style.color = isHidden ? '#333' : '#aaa';
 
-            // HÄMTA LÅTLISTAN DYNAMISKT! (Bara om det behövs)
             if (isHidden && settings.tracklist) {
                 const tracklistTd = document.getElementById(`tracklist-${skiva.id}`);
                 
-                // Körs bara om texten innehåller "Laddar"
                 if (tracklistTd && tracklistTd.innerText.includes('Laddar')) {
                     const token = localStorage.getItem('discogs_token');
                     const secret = localStorage.getItem('discogs_secret');
