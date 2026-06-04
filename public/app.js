@@ -75,36 +75,37 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // Ny funktion för att kontrollera anslutningsstatus via servern (istället för localStorage)
+// Ny funktion för att kontrollera anslutningsstatus via servern (istället för localStorage)
 async function checkPlatformConnections(userId) {
     if (!userId) return;
 
     try {
-        // Vi skapar en endpoint på servern som svarar vilka plattformar som har sparade tokens
         const response = await fetch(`/api/auth/connections?user_id=${userId}`);
         if (!response.ok) return;
         
-        const connections = await response.json(); // T.ex. { discogs: true, tradera: false }
+        const connections = await response.json(); 
         
         const discogsBtn = document.querySelector('.btn-discogs');
         if (connections.discogs && discogsBtn) {
-            discogsBtn.innerText = "✅ Discogs är kopplat";
+            discogsBtn.innerHTML = "✅ Discogs kopplat<br><span style='font-size:11px;font-weight:normal;'>Klicka för att byta konto</span>";
             discogsBtn.style.backgroundColor = "#51cf66";
             discogsBtn.style.borderColor = "#51cf66";
-            discogsBtn.style.pointerEvents = "none";
+            // Låser upp knappen så den går att klicka på igen
+            discogsBtn.style.pointerEvents = "auto"; 
         }
 
         const traderaBtn = document.querySelector('.btn-tradera');
         if (connections.tradera && traderaBtn) {
-            traderaBtn.innerText = "✅ Tradera är kopplat";
+            traderaBtn.innerHTML = "✅ Tradera kopplat<br><span style='font-size:11px;font-weight:normal;'>Klicka för att byta konto</span>";
             traderaBtn.style.backgroundColor = "#51cf66";
             traderaBtn.style.borderColor = "#51cf66";
-            traderaBtn.style.pointerEvents = "none";
+            // Låser upp knappen så den går att klicka på igen
+            traderaBtn.style.pointerEvents = "auto"; 
         }
     } catch (error) {
         console.error("Kunde inte hämta anslutningsstatus:", error);
     }
 }
-
 /* =========================================
    3. INLOGGNING OCH REGISTRERING
    ========================================= */
