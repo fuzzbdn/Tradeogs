@@ -107,13 +107,15 @@ router.get('/active-ads', async (req, res) => {
         res.json({ success: true, totalt_annonser: activeAds.length, annonser: activeAds });
 
 } catch (error) {
-           // Fånga upp Traderas exakta felmeddelande
-           const detaljer = error.response ? JSON.stringify(error.response.data) : error.message;
-           console.error('Detaljerat Tradera-fel:', detaljer);
-           
-           // Skicka felet till webbläsaren så du kan se det
-           res.status(500).json({ error: `Tradera säger: ${detaljer}` });
-       }
+        // Vi hämtar statuskod, url och data för att se exakt vad som avvisas
+        const status = error.response ? error.response.status : 'Okänd';
+        const url = error.config ? error.config.url : 'Okänd URL';
+        const data = error.response && error.response.data ? JSON.stringify(error.response.data) : 'Tomt svar';
+        
+        console.error('Tradera detaljer:', { status, url, data });
+        
+        res.status(500).json({ error: `Tradera vägrade svara! Statuskod: ${status}. URL: ${url}. Data: ${data}` });
+    }
 });
 
 // MÅSTE LIGGA LÄNGST NER!
