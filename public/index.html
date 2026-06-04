@@ -9,48 +9,56 @@
         body, html {
             margin: 0; padding: 0; width: 100vw; min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212; color: #ffffff;
+            background-color: #f4f6f8; /* Ljusgrå bakgrund */
+            color: #333333; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         .login-card {
-            background: #1e1e1e; padding: 40px; border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: center;
+            background: #ffffff; /* Vitt kort för loggans skull */
+            padding: 40px; border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); /* Mjuk skugga */
+            text-align: center;
             width: 100%; max-width: 400px;
         }
         
-        /* NY CSS FÖR LOGGAN PÅ INLOGGNINGSSIDAN */
         .login-logo {
             width: 100%; 
-            max-width: 300px; /* Håller den i en bra storlek för kortet */
+            max-width: 280px; 
             height: auto; 
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
-        h2 { font-size: 18px; color: #aaa; margin-bottom: 30px; font-weight: normal; margin-top: 0; }
+        h2 { font-size: 16px; color: #666; margin-bottom: 30px; font-weight: normal; margin-top: 0; }
         
         .form-group { margin-bottom: 15px; text-align: left; }
-        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px; }
+        label { display: block; margin-bottom: 5px; color: #555; font-size: 14px; font-weight: bold; }
+        
+        /* Ljusa inmatningsfält */
         input {
-            width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #333;
-            background-color: #252525; color: white; font-size: 16px;
+            width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc;
+            background-color: #fafafa; color: #333; font-size: 16px;
+            transition: border-color 0.2s;
         }
-        input:focus { border-color: #4285F4; outline: none; }
+        input:focus { border-color: #4285F4; outline: none; background-color: #fff; }
 
         .btn {
             display: block; width: 100%; color: white; border: none;
             padding: 12px; margin: 10px 0; font-size: 16px; font-weight: bold;
             border-radius: 6px; cursor: pointer; text-decoration: none;
-            transition: opacity 0.2s;
+            transition: all 0.2s;
         }
-        .btn:hover { opacity: 0.9; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-primary { background-color: #4285F4; }
         
-        .btn-outline { background-color: transparent; border: 1px solid #555; color: #fff; }
-        .btn-outline:hover { border-color: #fff; }
+        /* Mörk kontur för knappen på ljus bakgrund */
+        .btn-outline { background-color: transparent; border: 2px solid #e1e4e8; color: #555; }
+        .btn-outline:hover { border-color: #ccc; background-color: #f9f9f9; }
         
-        .btn-google { background-color: #ffffff; color: #000000; margin-top: 25px; }
+        /* Google-knappen med en grå kant för att synas mot det vita */
+        .btn-google { background-color: #ffffff; color: #333; border: 1px solid #ccc; margin-top: 25px; }
+        .btn-google:hover { background-color: #f4f6f8; }
         
-        .divider { margin: 20px 0; color: #555; position: relative; font-size: 14px; }
+        .divider { margin: 20px 0; color: #888; position: relative; font-size: 14px; }
         .message { margin-top: 15px; font-size: 14px; min-height: 20px; }
     </style>
 </head>
@@ -58,7 +66,6 @@
 
     <div class="login-card">
         <img src="/tradeogs_logo.png" alt="Tradeogs Logo" class="login-logo">
-        
         <h2>Logga in på ditt konto</h2>
 
         <div class="form-group">
@@ -86,12 +93,12 @@
             const statusDiv = document.getElementById('status-message');
 
             if (!email || !password) {
-                statusDiv.style.color = '#ff6b6b';
+                statusDiv.style.color = '#ff4757';
                 statusDiv.innerText = 'Vänligen fyll i både e-post och lösenord.';
                 return;
             }
 
-            statusDiv.style.color = '#aaa';
+            statusDiv.style.color = '#666';
             statusDiv.innerText = 'Loggar in...';
 
             try {
@@ -111,7 +118,7 @@
                 window.location.href = '/dashboard.html';
 
             } catch (error) {
-                statusDiv.style.color = '#ff6b6b';
+                statusDiv.style.color = '#ff4757';
                 statusDiv.innerText = error.message;
             }
         }
