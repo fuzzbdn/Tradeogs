@@ -176,66 +176,148 @@ function logout() {
     window.location.href = '/index.html';
 }
 /* =========================================
-   5. DISCOGS - HÄMTA SAMLING
+   5. DISCOGS - HÄMTA, SÖK & INSTÄLLNINGAR
    ========================================= */
+window.myCollection = []; // Global variabel för att spara listan i minnet
+
+// Ladda sparade inställningar när sidan startar
+document.addEventListener("DOMContentLoaded", function() {
+    const savedSettings = localStorage.getItem('tradeogs_display');
+    if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (document.getElementById('set-bild')) document.getElementById('set-bild').checked = settings.bild;
+        if (document.getElementById('set-format')) document.getElementById('set-format').checked = settings.format;
+        if (document.getElementById('set-ar')) document.getElementById('set-ar').checked = settings.ar;
+        if (document.getElementById('set-bolag')) document.getElementById('set-bolag').checked = settings.bolag;
+    }
+});
+
+// Spara inställningar när man klickar på "Spara"
+function saveDisplaySettings() {
+    const settings = {
+        bild: document.getElementById('set-bild').checked,
+        format: document.getElementById('set-format').checked,
+        ar: document.getElementById('set-ar').checked,
+        bolag: document.getElementById('set-bolag').checked
+    };
+    localStorage.setItem('tradeogs_display', JSON.stringify(settings));
+    
+    // Byt text på knappen tillfälligt för feedback
+    const btn = document.querySelector('button[onclick="saveDisplaySettings()"]');
+    const oldText = btn.innerText;
+    btn.innerText = "✅ Sparat!";
+    btn.style.backgroundColor = "#51cf66";
+    btn.style.color = "white";
+    
+    setTimeout(() => {
+        btn.innerText = oldText;
+        btn.style.backgroundColor = "transparent";
+        btn.style.color = "#555";
+    }, 2000);
+
+    // Rita om listan direkt om vi har skivor laddade
+    if (window.myCollection.length > 0) {
+        renderCollection(window.myCollection);
+    }
+}
+
+// Hämta listan från backend
 async function fetchCollection() {
     const token = localStorage.getItem('discogs_token');
     const secret = localStorage.getItem('discogs_secret');
     const statusDiv = document.getElementById('collection-status');
-    const listDiv = document.getElementById('collection-list');
 
-    // 1. Kolla om vi är inloggade på Discogs
     if (!token || !secret) {
         statusDiv.innerHTML = '<p style="color: #ff4757; font-weight: bold;">❌ Du måste koppla ditt Discogs-konto under Inställningar först!</p>';
         return;
     }
 
-    // 2. Visa laddar-text
     statusDiv.innerHTML = '<p style="color: #666;">Hämtar samling från Discogs... ⏳</p>';
-    listDiv.innerHTML = ''; // Rensa listan
+    document.getElementById('collection-list').innerHTML = '';
 
     try {
-        // 3. Anropa vår backend med nycklarna
         const response = await fetch(`/api/discogs/collection?token=${token}&secret=${secret}`);
         const data = await response.json();
-
         if (!response.ok) throw new Error(data.error || 'Något gick fel.');
 
-        // 4. Skriv ut hur många skivor vi hittade och vem användaren är
+        // Spara skivorna i minnet för live-sökning
+        window.myCollection = data.skivor; 
+
         statusDiv.innerHTML = `
             <p style="color: #51cf66; font-weight: bold;">
                 ✅ Hittade användare: ${data.username} <br>
                 Visar ${data.skivor.length} av totalt ${data.totalt_i_samlingen} sparade skivor.
             </p>`;
-
-        // 5. Bygg snygga HTML-kort för varje skiva
-        data.skivor.forEach(skiva => {
-            const item = document.createElement('div');
-            
-            // Design för skiv-raden
-            item.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; border: 1px solid #e1e4e8; border-radius: 8px; background: #fafafa;";
-            
-            // Kolla om skivan har en bild, annars visa en grå ruta
-            const bildHtml = skiva.bild 
-                ? `<img src="${skiva.bild}" alt="Omslag" style="width: 60px; height: 60px; border-radius: 4px; margin-right: 15px; object-fit: cover; border: 1px solid #ccc;">` 
-                : `<div style="width: 60px; height: 60px; background: #e1e4e8; border-radius: 4px; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px;">💿</div>`;
-
-            // Lägg in innehållet
-            item.innerHTML = `
-                <div style="display: flex; align-items: center;">
-                    ${bildHtml}
-                    <div>
-                        <strong style="display: block; font-size: 16px; color: #222;">${skiva.artist} - ${skiva.titel}</strong>
-                        <span style="font-size: 13px; color: #666;">${skiva.format} • ${skiva.ar || 'Okänt år'}</span>
-                    </div>
-                </div>
-                <button class="btn btn-tradera" onclick="alert('Snart kan du sälja skiva ID: ${skiva.id}')" style="margin: 0; padding: 10px 15px; font-size: 14px; width: auto;">Sälj på Tradera</button>
-            `;
-            
-            listDiv.appendChild(item);
-        });
+        
+        // Visa sökfältet nu när vi har data
+        document.getElementById('search-container').style.display = 'block';
+        
+        // Rita ut listan
+        renderCollection(window.myCollection);
 
     } catch (error) {
         statusDiv.innerHTML = `<p style="color: #ff4757; font-weight: bold;">Fel: ${error.message}</p>`;
     }
+}
+
+// Sökfunktion (Körs varje gång du trycker på en tangent i sökfältet)
+function filterCollection() {
+    const query = document.getElementById('search-input').value.toLowerCase();
+    
+    // Filtrera fram skivor där artist eller titel matchar sökningen
+    const filteredList = window.myCollection.filter(skiva => {
+        return skiva.artist.toLowerCase().includes(query) || skiva.titel.toLowerCase().includes(query);
+    });
+
+    renderCollection(filteredList);
+}
+
+// Funktionen som bygger upp HTML:en för skivorna baserat på dina inställningar
+function renderCollection(skivor) {
+    const listDiv = document.getElementById('collection-list');
+    listDiv.innerHTML = ''; // Töm den gamla listan
+
+    // Hämta aktuella inställningar
+    const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || { bild: true, format: true, ar: true, bolag: false };
+
+    if (skivor.length === 0) {
+        listDiv.innerHTML = '<p style="color: #888;">Inga skivor hittades.</p>';
+        return;
+    }
+
+    skivor.forEach(skiva => {
+        const item = document.createElement('div');
+        item.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; border: 1px solid #e1e4e8; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.02);";
+        
+        // Bygg bilden om inställningen är på
+        let bildHtml = '';
+        if (settings.bild) {
+            bildHtml = skiva.bild 
+                ? `<img src="${skiva.bild}" alt="Omslag" style="width: 60px; height: 60px; border-radius: 4px; margin-right: 15px; object-fit: cover; border: 1px solid #ccc;">` 
+                : `<div style="width: 60px; height: 60px; background: #e1e4e8; border-radius: 4px; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px;">💿</div>`;
+        }
+
+        // Bygg textraden för Format, År och Bolag dynamiskt
+        let infoArray = [];
+        if (settings.format) infoArray.push(skiva.format);
+        if (settings.ar) infoArray.push(skiva.ar || 'Okänt år');
+        if (settings.bolag) infoArray.push(`🏷️ ${skiva.bolag}`);
+        
+        const extraInfo = infoArray.length > 0 
+            ? `<span style="font-size: 13px; color: #666; display: block; margin-top: 4px;">${infoArray.join(' • ')}</span>`
+            : '';
+
+        item.innerHTML = `
+            <div style="display: flex; align-items: center;">
+                ${bildHtml}
+                <div>
+                    <strong style="display: block; font-size: 16px; color: #222;">${skiva.artist} - ${skiva.titel}</strong>
+                    ${extraInfo}
+                </div>
+            </div>
+            <button class="btn btn-tradera" onclick="alert('Skapar annons för ID: ${skiva.id}')" style="margin: 0; padding: 10px 15px; font-size: 14px; width: auto;">Sälj på Tradera</button>
+        `;
+        
+        listDiv.appendChild(item);
+    });
 }
