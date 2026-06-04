@@ -44,6 +44,40 @@
         .btn-discogs { background-color: #333333; border: 1px solid #555; }
         .btn-tradera { background-color: #fbd914; color: #121212; }
     </style>
+
+    <script>
+        (function() {
+            // 1. Kolla om det finns en sparad session från e-postinloggningen
+            let session = localStorage.getItem('supabase_session');
+
+            // 2. Förberedelse för Google: Kolla om vi precis kom tillbaka från Google OAuth.
+            // Supabase skickar nämligen med inloggningsnycklarna efter ett '#' i adressfältet.
+            if (window.location.hash) {
+                const hash = window.location.hash.substring(1);
+                const params = new URLSearchParams(hash);
+                const accessToken = params.get('access_token');
+                const refreshToken = params.get('refresh_token');
+
+                if (accessToken) {
+                    const oauthSession = {
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    };
+                    // Sparar Google-sessionen så den fungerar på samma sätt som e-post
+                    localStorage.setItem('supabase_session', JSON.stringify(oauthSession));
+                    session = JSON.stringify(oauthSession);
+                    
+                    // Rensa bort den fula texten ur adressfältet så det bara står /dashboard.html
+                    history.replaceState(null, null, window.location.pathname);
+                }
+            }
+
+            // 3. Om ingen session hittades överhuvudtaget -> Kasta ut till inloggningssidan!
+            if (!session) {
+                window.location.href = '/index.html';
+            }
+        })();
+    </script>
 </head>
 <body>
 
@@ -62,9 +96,8 @@
     </div>
 
     <script>
-        // Enkel säkerhetsspärr: Om man inte har en sparad session (eller har loggat in med Google),
-        // kan du utöka detta för att verifiera användaren.
         function logout() {
+            // Rensa sparad data och skicka tillbaka till inloggningen
             localStorage.removeItem('supabase_session');
             window.location.href = '/index.html';
         }
