@@ -49,7 +49,6 @@ router.get('/collection', async (req, res) => {
             ar: item.basic_information.year,
             format: item.basic_information.formats[0].name,
             bolag: item.basic_information.labels ? item.basic_information.labels[0].name : 'Okänt',
-            // NYTT: Katalognummer och Länk
             katalognummer: item.basic_information.labels ? item.basic_information.labels[0].catno : 'Okänt',
             discogs_url: `https://www.discogs.com/release/${item.id}`,
             bild: item.basic_information.thumb || '',
@@ -70,7 +69,7 @@ router.get('/collection', async (req, res) => {
     }
 });
 
-// RUTT 2: NY! Hämta låtlista för en specifik skiva
+// RUTT 2: Hämta låtlista OCH prisvärdering dynamiskt
 router.get('/release/:id', async (req, res) => {
     const { token, secret } = req.query;
     const releaseId = req.params.id;
@@ -82,12 +81,26 @@ router.get('/release/:id', async (req, res) => {
         const releaseUrl = `https://api.discogs.com/releases/${releaseId}`;
         const releaseAuthHeader = oauth.toHeader(oauth.authorize({ url: releaseUrl, method: 'GET' }, userToken));
         
-        const response = await axios.get(releaseUrl, {
-            headers: { 'Authorization': releaseAuthHeader['Authorization'], 'User-Agent': 'Tradeogs/1.0' }
-        });
+        const priceUrl = `https://api.discogs.com/marketplace/price_suggestions/${releaseId}`;
+        const priceAuthHeader = oauth.toHeader(oauth.authorize({ url: priceUrl, method: 'GET' }, userToken));
 
-        // Skickar tillbaka låtlistan!
-        res.json({ tracklist: response.data.tracklist });
+        // Kör båda anropen samtidigt för att spara tid!
+        const [releaseRes, priceRes] = await Promise.allSettled([
+            axios.get(releaseUrl, { headers: { 'Authorization': releaseAuthHeader['Authorization'], 'User-Agent': 'Tradeogs/1.0' } }),
+            axios.get(priceUrl, { headers: { 'Authorization': priceAuthHeader['Authorization'], 'User-Agent': 'Tradeogs/1.0' } })
+        ]);
+
+        const responseData = {};
+        
+        if (releaseRes.status === 'fulfilled') {
+            responseData.tracklist = releaseRes.value.data.tracklist;
+        }
+
+        if (priceRes.status === 'fulfilled') {
+            responseData.prices = priceRes.value.data;
+        }
+
+        res.json(responseData);
     } catch (error) {
         console.error('Discogs API Fel (Release):', error.message);
         res.status(500).json({ error: 'Kunde inte hämta release-data.' });
