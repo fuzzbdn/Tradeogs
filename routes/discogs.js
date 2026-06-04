@@ -4,7 +4,6 @@ const axios = require('axios');
 const crypto = require('crypto');
 const OAuth = require('oauth-1.0a');
 
-// Vi sätter upp samma krypteringsverktyg som i auth.js
 const oauth = OAuth({
     consumer: { 
         key: process.env.DISCOGS_CONSUMER_KEY, 
@@ -16,44 +15,59 @@ const oauth = OAuth({
     },
 });
 
-// Rutt för att hämta skivsamlingen (Mapp 0 = Alla skivor)
 router.get('/collection', async (req, res) => {
-    // För testet hämtar vi variablerna direkt från webbadressen
-    const { username, token, secret } = req.query;
+    // Nu behöver vi bara token och secret från adressfältet!
+    const { token, secret } = req.query;
 
-    if (!username || !token || !secret) {
-        return res.status(400).json({ error: 'Saknar parametrar. Behöver username, token och secret i adressen.' });
+    if (!token || !secret) {
+        return res.status(400).json({ error: 'Saknar Discogs-nycklar. Har du kopplat kontot?' });
     }
 
     const userToken = { key: token, secret: secret };
-    const url = `https://api.discogs.com/users/${username}/collection/folders/0/releases`;
-
-    const requestData = { url: url, method: 'GET' };
 
     try {
-        // Signera anropet med dina personliga nycklar
-        const authHeader = oauth.toHeader(oauth.authorize(requestData, userToken));
-        
-        const response = await axios.get(url, {
+        // STEG 1: Fråga Discogs API vem som äger dessa nycklar (Identity)
+        const identityUrl = 'https://api.discogs.com/oauth/identity';
+        const identityRequest = { url: identityUrl, method: 'GET' };
+        const identityAuthHeader = oauth.toHeader(oauth.authorize(identityRequest, userToken));
+
+        const identityResponse = await axios.get(identityUrl, {
             headers: { 
-                'Authorization': authHeader['Authorization'],
+                'Authorization': identityAuthHeader['Authorization'],
                 'User-Agent': 'Tradeogs/1.0'
             }
         });
 
-        // För att skärmen inte ska explodera av text plockar vi bara ut de 5 första skivorna, 
-        // och bara exakt den data vi senare behöver för Tradera-annonsen
-        const releases = response.data.releases.slice(0, 5).map(item => ({
+        // Plocka ut användarnamnet automatiskt!
+        const username = identityResponse.data.username;
+
+        // STEG 2: Använd namnet för att hämta samlingen (Max 10 skivor för test)
+        const collectionUrl = `https://api.discogs.com/users/${username}/collection/folders/0/releases?per_page=10`;
+        const collectionRequest = { url: collectionUrl, method: 'GET' };
+        const collectionAuthHeader = oauth.toHeader(oauth.authorize(collectionRequest, userToken));
+
+        const collectionResponse = await axios.get(collectionUrl, {
+            headers: { 
+                'Authorization': collectionAuthHeader['Authorization'],
+                'User-Agent': 'Tradeogs/1.0'
+            }
+        });
+
+        // Plocka ut den data vi vill visa på skärmen
+        const releases = collectionResponse.data.releases.map(item => ({
+            id: item.id,
             artist: item.basic_information.artists[0].name,
             titel: item.basic_information.title,
             ar: item.basic_information.year,
-            format: item.basic_information.formats[0].name
+            format: item.basic_information.formats[0].name,
+            bild: item.basic_information.thumb || '' // Hämtar en liten bild på omslaget!
         }));
 
         res.json({
-            message: 'Hämtning lyckades! Här är dina skivor:',
-            totalt_i_samlingen: response.data.pagination.items,
-            test_skivor: releases
+            message: 'Hämtning lyckades!',
+            username: username,
+            totalt_i_samlingen: collectionResponse.data.pagination.items,
+            skivor: releases
         });
 
     } catch (error) {
