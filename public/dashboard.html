@@ -4,16 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tradeogs - Dashboard</title>
-    
-    <!-- Länka till extern CSS -->
     <link rel="stylesheet" href="/style.css">
-    
-    <!-- Länka till extern JavaScript (defer gör att sidan laddar snabbare) -->
     <script src="/app.js" defer></script>
 </head>
 <body>
 
-    <!-- Övre menyraden -->
     <header>
         <div class="header-left">
             <img src="/tradeogs_logo.png" alt="Tradeogs Logo" class="dash-logo">
@@ -22,20 +17,15 @@
         <button class="logout-btn" onclick="logout()">Logga ut</button>
     </header>
 
-    <!-- Appens huvudlayout (Meny + Innehåll) -->
     <div class="app-layout">
-        
-        <!-- SIDOMENYN -->
         <aside class="sidebar">
             <a class="menu-item" id="nav-collection" onclick="switchView('collection')">Min Samling</a>
             <a class="menu-item" id="nav-ads" onclick="switchView('ads')">Aktiva Annonser</a>
             <a class="menu-item active" id="nav-settings" onclick="switchView('settings')">Inställningar & Kopplingar</a>
         </aside>
 
-        <!-- HUVUDINNEHÅLL -->
         <main class="main-content">
             
-            <!-- VY 1: MIN SAMLING -->
             <section id="view-collection" class="view-section">
                 <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
                     <h2>Min Discogs-samling</h2>
@@ -45,7 +35,6 @@
                         <button class="btn btn-primary" onclick="fetchCollection()" style="width: auto; padding: 10px 20px;">Ladda samling</button>
                     </div>
 
-                    <!-- Sökfält (Dolt tills samlingen är laddad) -->
                     <div id="search-container" style="display: none; margin-bottom: 20px;">
                         <input type="text" id="search-input" placeholder="Sök på artist eller titel..." onkeyup="filterCollection()" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #ccc;">
                     </div>
@@ -54,7 +43,6 @@
                 </div>
             </section>
 
-            <!-- VY 2: AKTIVA ANNONSER -->
             <section id="view-ads" class="view-section">
                 <div class="card" style="text-align: left; max-width: 800px; margin: 0 auto;">
                     <h2>Aktiva annonser på Tradera</h2>
@@ -62,7 +50,6 @@
                 </div>
             </section>
 
-            <!-- VY 3: INSTÄLLNINGAR (Aktiv som standard) -->
             <section id="view-settings" class="view-section active">
                 <div class="card" style="max-width: 600px; margin: 0 auto; text-align: left;">
                     <h2>Koppla plattformar</h2>
@@ -73,9 +60,7 @@
                     
                     <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
                     
-                    <!-- Visningsalternativ för samlingen -->
-<!-- Visningsalternativ för samlingen -->
-<h2>Visningsalternativ för samlingen</h2>
+                    <h2>Visningsalternativ för samlingen</h2>
                     <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Välj vilken information från Discogs du vill visa i din skivlista.</p>
                     
                     <h3 style="font-size: 15px; margin-bottom: 10px; color: #444;">I den kompakta listan:</h3>
@@ -102,6 +87,10 @@
                         <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
                             <input type="checkbox" id="set-tracklist" checked style="width: auto; margin-right: 10px;"> Låtlista
                         </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-katalog" checked style="width: auto; margin-right: 10px;"> Katalognummer </label>
+                        <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
+                            <input type="checkbox" id="set-url" checked style="width: auto; margin-right: 10px;"> Länk till Discogs </label>
                         <label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">
                             <input type="checkbox" id="set-matrix" style="width: auto; margin-right: 10px;"> Streckkod & Matrix
                         </label>
