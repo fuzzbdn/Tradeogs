@@ -515,3 +515,82 @@ function renderCollection(skivor, append = false) {
         listDiv.appendChild(item);
     });
 }
+/* =========================================
+   6. TRADERA - HÄMTA OCH RITA UT ANNONSER
+   ========================================= */
+async function fetchTraderaAds() {
+    const listDiv = document.getElementById('tradera-ads-list');
+    const statusDiv = document.getElementById('tradera-ads-status');
+    
+    if (!listDiv || !statusDiv) return;
+
+    statusDiv.innerHTML = '<p style="color: #666;">Hämtar annonser från Tradera... ⏳</p>';
+    listDiv.innerHTML = '';
+
+    // Vi utgår från att du sparar Tradera-token i localStorage när inloggningen är klar
+    const traderaToken = localStorage.getItem('tradera_token'); 
+    
+    if (!traderaToken) {
+        statusDiv.innerHTML = '<p style="color: #ff4757;">Du måste koppla ditt Tradera-konto under Inställningar först för att hämta annonser.</p>';
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/tradera/active-ads', {
+            headers: {
+                'Authorization': `Bearer ${traderaToken}`
+            }
+        });
+        
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || 'Något gick fel mot Tradera.');
+
+        if (data.totalt_annonser === 0) {
+            statusDiv.innerHTML = '<p style="color: #666;">Du har inga aktiva annonser på Tradera just nu.</p>';
+            return;
+        }
+
+        statusDiv.innerHTML = `<p style="color: #51cf66; font-weight: bold;">Hittade ${data.totalt_annonser} aktiva annonser.</p>`;
+        renderTraderaAds(data.annonser);
+
+    } catch (error) {
+        statusDiv.innerHTML = `<p style="color: #ff4757; font-weight: bold;">Fel: ${error.message}</p>`;
+    }
+}
+
+function renderTraderaAds(annonser) {
+    const listDiv = document.getElementById('tradera-ads-list');
+    listDiv.innerHTML = '';
+
+    annonser.forEach(ad => {
+        const item = document.createElement('div');
+        item.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; border: 1px solid #e1e4e8; border-radius: 8px; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.02);";
+        
+        const bildHtml = ad.bild_url 
+            ? `<img src="${ad.bild_url}" alt="Annonsbild" style="width: 60px; height: 60px; border-radius: 4px; margin-right: 15px; object-fit: cover; border: 1px solid #ccc;">`
+            : `<div style="width: 60px; height: 60px; background: #e1e4e8; border-radius: 4px; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px;">📦</div>`;
+
+        // Formatera slutdatum snyggt till svenskt format
+        const slutdatum = new Date(ad.slutdatum).toLocaleString('sv-SE', { 
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' 
+        });
+
+        item.innerHTML = `
+            <div style="display: flex; align-items: center; flex-grow: 1;">
+                ${bildHtml}
+                <div>
+                    <strong style="display: block; font-size: 16px; color: #222; margin-bottom: 4px;">${ad.rubrik}</strong>
+                    <span style="font-size: 13px; color: #888;">Avslutas: ${slutdatum}</span>
+                </div>
+            </div>
+            
+            <div style="text-align: right; flex-shrink: 0;">
+                <strong style="display: block; font-size: 16px; color: #4285F4;">${ad.pris} ${ad.valuta}</strong>
+                <span style="font-size: 13px; color: #666; display: inline-block; background: #f4f6f8; padding: 2px 6px; border-radius: 4px; margin-top: 4px;">${ad.bud} bud</span>
+            </div>
+        `;
+        
+        listDiv.appendChild(item);
+    });
+}
