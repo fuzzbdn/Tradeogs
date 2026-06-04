@@ -68,7 +68,6 @@ router.get('/google', async (req, res) => {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { 
-                // Ändrad till dashboard.html för det nya flödet
                 redirectTo: `${HOST_URL}/dashboard.html` 
             },
         });
@@ -89,6 +88,13 @@ router.get('/discogs/login', async (req, res) => {
     const requestTokenUrl = 'https://api.discogs.com/oauth/request_token';
     const HOST_URL = process.env.HOST_URL || 'http://localhost:3000';
     
+    // NYTT: Fånga upp user_id från frontend och spara i en cookie så vi vet vem som loggar in
+    const { user_id } = req.query;
+    if (user_id) {
+        // secure: true rekommenderas om du kör HTTPS (t.ex. på Vercel)
+        res.cookie('discogs_user_id', user_id, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 600000 });
+    }
+    
     const requestData = {
         url: requestTokenUrl,
         method: 'POST',
@@ -108,7 +114,7 @@ router.get('/discogs/login', async (req, res) => {
         const oauth_token = params.get('oauth_token');
         const oauth_token_secret = params.get('oauth_token_secret');
 
-        res.cookie('discogs_temp_secret', oauth_token_secret, { httpOnly: true, secure: true, maxAge: 600000 });
+        res.cookie('discogs_temp_secret', oauth_token_secret, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 600000 });
         res.redirect(`https://www.discogs.com/oauth/authorize?oauth_token=${oauth_token}`);
 
     } catch (error) {
@@ -121,6 +127,7 @@ router.get('/discogs/login', async (req, res) => {
 router.get('/discogs/callback', async (req, res) => {
     const { oauth_token, oauth_verifier } = req.query;
     const oauth_token_secret = getCookie(req, 'discogs_temp_secret');
+    const user_id = getCookie(req, 'discogs_user_id'); // NYTT: Hämta användarens ID från cookien
 
     if (!oauth_token || !oauth_verifier || !oauth_token_secret) {
         return res.status(400).send('Något gick fel, sessionen saknas eller har gått ut. Försök igen.');
@@ -143,8 +150,33 @@ router.get('/discogs/callback', async (req, res) => {
         const final_token = params.get('oauth_token');
         const final_secret = params.get('oauth_token_secret');
 
-// Skicka tillbaka användaren till dashboarden och skicka med nycklarna dolt i URL-fragmentet
-        res.redirect(`/dashboard.html#discogs_token=${final_token}&discogs_secret=${final_secret}`);
+        // NYTT: Spara tokens direkt i Supabase databas istället för att skicka till frontend
+        if (user_id) {
+            // Rensa eventuella gamla nycklar för denna användare och plattform
+            await supabase.from('plattform_tokens')
+                .delete()
+                .eq('user_id', user_id)
+                .eq('plattform', 'discogs');
+
+            // Lägg in de nya
+            const { error } = await supabase.from('plattform_tokens').insert({
+                user_id: user_id,
+                plattform: 'discogs',
+                access_token: final_token,
+                token_secret: final_secret // Se till att du har denna kolumn i din tabell (eller kalla den refresh_token om du återanvänder det fältet)
+            });
+            
+            if (error) {
+                console.error('Databasfel vid sparande av Discogs-tokens:', error);
+            }
+        }
+
+        // Rensa de tillfälliga cookies som användes för flödet
+        res.clearCookie('discogs_temp_secret');
+        res.clearCookie('discogs_user_id');
+
+        // Skicka tillbaka användaren till dashboarden (utan att exponera secret i URL:en)
+        res.redirect('/dashboard.html');
 
     } catch (error) {
         console.error('Fel vid Access Token:', error.message);
