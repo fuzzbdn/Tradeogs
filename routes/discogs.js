@@ -54,6 +54,7 @@ router.get('/collection', async (req, res) => {
         });
 
         // Plocka ut datan, nu med skivbolag tillagt!
+// Plocka ut den data vi vill visa på skärmen
         const releases = collectionResponse.data.releases.map(item => ({
             id: item.id,
             artist: item.basic_information.artists[0].name,
@@ -61,7 +62,10 @@ router.get('/collection', async (req, res) => {
             ar: item.basic_information.year,
             format: item.basic_information.formats[0].name,
             bolag: item.basic_information.labels ? item.basic_information.labels[0].name : 'Okänt',
-            bild: item.basic_information.thumb || '' 
+            bild: item.basic_information.thumb || '',
+            // NYTT: Plockar ut Genre och Stil
+            genre: item.basic_information.genres ? item.basic_information.genres.join(', ') : 'Okänd genre',
+            stil: item.basic_information.styles ? item.basic_information.styles.join(', ') : ''
         }));
 
         res.json({
