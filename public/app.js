@@ -175,3 +175,67 @@ function logout() {
     localStorage.removeItem('discogs_secret');
     window.location.href = '/index.html';
 }
+/* =========================================
+   5. DISCOGS - HÄMTA SAMLING
+   ========================================= */
+async function fetchCollection() {
+    const token = localStorage.getItem('discogs_token');
+    const secret = localStorage.getItem('discogs_secret');
+    const statusDiv = document.getElementById('collection-status');
+    const listDiv = document.getElementById('collection-list');
+
+    // 1. Kolla om vi är inloggade på Discogs
+    if (!token || !secret) {
+        statusDiv.innerHTML = '<p style="color: #ff4757; font-weight: bold;">❌ Du måste koppla ditt Discogs-konto under Inställningar först!</p>';
+        return;
+    }
+
+    // 2. Visa laddar-text
+    statusDiv.innerHTML = '<p style="color: #666;">Hämtar samling från Discogs... ⏳</p>';
+    listDiv.innerHTML = ''; // Rensa listan
+
+    try {
+        // 3. Anropa vår backend med nycklarna
+        const response = await fetch(`/api/discogs/collection?token=${token}&secret=${secret}`);
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || 'Något gick fel.');
+
+        // 4. Skriv ut hur många skivor vi hittade och vem användaren är
+        statusDiv.innerHTML = `
+            <p style="color: #51cf66; font-weight: bold;">
+                ✅ Hittade användare: ${data.username} <br>
+                Visar ${data.skivor.length} av totalt ${data.totalt_i_samlingen} sparade skivor.
+            </p>`;
+
+        // 5. Bygg snygga HTML-kort för varje skiva
+        data.skivor.forEach(skiva => {
+            const item = document.createElement('div');
+            
+            // Design för skiv-raden
+            item.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 15px; border: 1px solid #e1e4e8; border-radius: 8px; background: #fafafa;";
+            
+            // Kolla om skivan har en bild, annars visa en grå ruta
+            const bildHtml = skiva.bild 
+                ? `<img src="${skiva.bild}" alt="Omslag" style="width: 60px; height: 60px; border-radius: 4px; margin-right: 15px; object-fit: cover; border: 1px solid #ccc;">` 
+                : `<div style="width: 60px; height: 60px; background: #e1e4e8; border-radius: 4px; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px;">💿</div>`;
+
+            // Lägg in innehållet
+            item.innerHTML = `
+                <div style="display: flex; align-items: center;">
+                    ${bildHtml}
+                    <div>
+                        <strong style="display: block; font-size: 16px; color: #222;">${skiva.artist} - ${skiva.titel}</strong>
+                        <span style="font-size: 13px; color: #666;">${skiva.format} • ${skiva.ar || 'Okänt år'}</span>
+                    </div>
+                </div>
+                <button class="btn btn-tradera" onclick="alert('Snart kan du sälja skiva ID: ${skiva.id}')" style="margin: 0; padding: 10px 15px; font-size: 14px; width: auto;">Sälj på Tradera</button>
+            `;
+            
+            listDiv.appendChild(item);
+        });
+
+    } catch (error) {
+        statusDiv.innerHTML = `<p style="color: #ff4757; font-weight: bold;">Fel: ${error.message}</p>`;
+    }
+}
