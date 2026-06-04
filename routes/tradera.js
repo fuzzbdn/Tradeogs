@@ -12,6 +12,7 @@ router.get('/login', (req, res) => {
     res.redirect(traderaAuthUrl);
 });
 
+
 // --- STEG 2: TRADERA SKICKAR TILLBAKA ANVÄNDAREN HIT ---
 router.get('/callback', (req, res) => {
     // Tradera skickar tillbaka den färdiga nyckeln direkt i webbadressen!
