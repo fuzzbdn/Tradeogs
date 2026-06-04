@@ -68,6 +68,10 @@ document.addEventListener("DOMContentLoaded", function() {
         setChecked('set-tracklist', settings.tracklist);
         setChecked('set-matrix', settings.matrix);
         setChecked('set-price', settings.price);
+
+       // NYTT: Sätt värdet på dropdown-menyn (100 är standard om inget är sparat)
+        if (document.getElementById('set-limit')) {
+            document.getElementById('set-limit').value = settings.limit || '100';
     }
 });
 
@@ -191,7 +195,9 @@ function saveDisplaySettings() {
         genre: document.getElementById('set-genre').checked,
         tracklist: document.getElementById('set-tracklist').checked,
         matrix: document.getElementById('set-matrix').checked,
-        price: document.getElementById('set-price').checked
+        price: document.getElementById('set-price').checked,
+       // NYTT: Spara antalet skivor
+        limit: document.getElementById('set-limit').value
     };
     localStorage.setItem('tradeogs_display', JSON.stringify(settings));
     
@@ -230,8 +236,12 @@ async function fetchCollection() {
     statusDiv.innerHTML = '<p style="color: #666;">Hämtar samling från Discogs... ⏳</p>';
     document.getElementById('collection-list').innerHTML = '';
 
+const settings = JSON.parse(localStorage.getItem('tradeogs_display')) || {};
+    const limit = settings.limit || '100';
+
     try {
-        const response = await fetch(`/api/discogs/collection?token=${token}&secret=${secret}`);
+        // NYTT: Skicka med limit i URL:en!
+        const response = await fetch(`/api/discogs/collection?token=${token}&secret=${secret}&limit=${limit}`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Något gick fel.');
 
