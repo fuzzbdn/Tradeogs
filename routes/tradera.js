@@ -73,7 +73,7 @@ router.get('/active-ads', async (req, res) => {
     try {
         const { data: tokenRecord, error: dbError } = await supabase
             .from('plattform_tokens')
-            .select('access_token, token_secret') // token_secret innehåller userId från Tradera
+            .select('access_token, token_secret')
             .eq('user_id', user_id)
             .eq('plattform', 'tradera')
             .single();
@@ -82,20 +82,19 @@ router.get('/active-ads', async (req, res) => {
             return res.status(404).json({ error: 'Hittade inget kopplat Tradera-konto.' });
         }
 
-        // Enligt dokumentationen: Använd AppId, AppKey, UserId och Token
-        const traderaUrl = 'https://api.tradera.com/v3/public/items/active'; 
+        // 1. ÄNDRAD URL: Vi använder nu "restricted" istället för "public"
+        const traderaUrl = 'https://api.tradera.com/v3/restricted/items/active'; 
         
         const response = await axios.get(traderaUrl, {
             headers: {
                 'AppId': TRADERA_APP_ID,
                 'AppKey': TRADERA_APP_KEY,
-                'UserId': tokenRecord.token_secret, // Dokumentationen anger UserId
-                'Token': tokenRecord.access_token,   // Dokumentationen anger Token
+                'UserId': tokenRecord.token_secret, 
+                'Token': tokenRecord.access_token,   
                 'Accept': 'application/json'
             }
         });
 
-        // Resten av din kod för att mappa annonser förblir densamma...
         const items = response.data.items || [];
         const activeAds = items.map(ad => ({
             id: ad.itemId,
@@ -108,8 +107,16 @@ router.get('/active-ads', async (req, res) => {
         res.json({ success: true, annonser: activeAds });
 
     } catch (error) {
-        // ... din felhantering här
+        // 2. TILLBAKALAGD FELHANTERING: Detta förhindrar att frontend fastnar i en loop
+        const status = error.response ? error.response.status : 'Okänd';
+        const detaljer = error.response && error.response.data ? JSON.stringify(error.response.data) : error.message;
+        
+        console.error('Tradera kraschade:', { status, detaljer });
+        res.status(500).json({ error: `Tradera vägrade svara! Statuskod: ${status}. Detaljer: ${detaljer}` });
     }
 });
+
+// MÅSTE LIGGA LÄNGST NER!
+module.exports = router;
 // MÅSTE LIGGA LÄNGST NER!
 module.exports = router;
